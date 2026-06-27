@@ -10,6 +10,10 @@
     <meta name="theme-color" content="#0A1128">
     <link rel="manifest" href="manifest.json">
     
+    <!-- Leaflet.js CDNs -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
     <!-- Tailwind CSS and Google Fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -139,7 +143,8 @@
             </svg>
             <div>
                 <h1 class="text-lg font-bold font-tactical text-nexusBronze tracking-wider leading-none">NEXUS SECURITY</h1>
-                <p class="text-[9px] font-mono tracking-widest text-nexusRed leading-none mt-1">SECTOR CHACAO / EMERGENCIAS</p>
+                <p class="text-[9px] font-mono tracking-widest text-nexusRed leading-none mt-1 uppercase">SECTOR CHACAO / EMERGENCIAS</p>
+                <p class="text-[8px] font-mono text-gray-500 mt-0.5">Nodos Mesh Activos: <span id="mesh-count" class="text-blue-400 font-bold animate-pulse">Escaneando...</span></p>
             </div>
         </div>
         
@@ -192,6 +197,16 @@
                     </div>
 
                     <div>
+                        <label class="block text-xs font-mono uppercase tracking-widest text-nexusBronze mb-1">Correo Electrónico</label>
+                        <input type="email" id="correo" placeholder="Ej. ciudadano@chacao.gob.ve" class="w-full p-3 glass-input rounded text-white placeholder-gray-600 text-sm" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-widest text-nexusBronze mb-1">Instagram (Opcional)</label>
+                        <input type="text" id="instagram" placeholder="Ej. @chacao_seguro" class="w-full p-3 glass-input rounded text-white placeholder-gray-600 text-sm font-mono">
+                    </div>
+
+                    <div>
                         <label class="block text-xs font-mono uppercase tracking-widest text-nexusBronze mb-1">Ubicación / Sector Edificio</label>
                         <select id="edificio" class="w-full p-3 glass-input rounded text-white text-sm" required>
                             <option value="" disabled selected class="bg-nexusNavy">Selecciona sector...</option>
@@ -233,6 +248,23 @@
                     <span class="text-gray-400">ID:</span>
                     <span id="user-display-id" class="text-nexusRed font-bold ml-1">...</span>
                 </div>
+            </div>
+
+            <!-- SEISMIC ALERT BANNER -->
+            <div id="seismic-alert" class="hidden bg-nexusRed/20 border border-nexusRed p-4 rounded-xl text-center animate-pulse shadow-sos relative overflow-hidden">
+                <h3 class="font-black font-tactical text-nexusRed text-sm tracking-wider flex justify-center items-center">
+                    <span class="w-3.5 h-3.5 rounded-full bg-nexusRed mr-2 status-pulse-dot shadow-[0_0_12px_#E63946]"></span>
+                    ⚠️ ALERTA SÍSMICA LOCAL ⚠️
+                </h3>
+                <p class="text-xs text-red-200 mt-1 font-mono">Vibración anómala crítica detectada por este dispositivo. Mantenga la calma y busque resguardo.</p>
+            </div>
+
+            <!-- BROADCAST ALERT BANNER -->
+            <div id="broadcast-alert" class="hidden bg-blue-500/25 border border-blue-500/40 p-4 rounded-xl text-center shadow-lg relative overflow-hidden">
+                <h3 class="font-black font-tactical text-blue-400 text-[10px] tracking-widest flex justify-center items-center uppercase">
+                    📢 AVISO OFICIAL DE AUTORIDADES
+                </h3>
+                <p id="broadcast-message-text" class="text-xs text-blue-200 mt-1 font-mono italic">...</p>
             </div>
 
             <!-- DYNAMIC ACOPIO FEED -->
@@ -303,6 +335,21 @@
                         TRANSMITIR REPORTE
                     </button>
                 </div>
+            </div>
+
+            <!-- MAPA DE DAÑOS INTERACTIVO (LEAFLET) -->
+            <div class="glass-panel p-5 rounded-xl space-y-4">
+                <h3 class="font-tactical font-bold text-nexusBronze tracking-wider flex items-center border-b border-nexusBronze/20 pb-2">
+                    <svg class="w-5 h-5 mr-2 text-nexusBronze" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"></path>
+                    </svg>
+                    MAPA DE CALOR DE DAÑOS
+                </h3>
+                <div id="map" class="h-48 w-full rounded-xl border border-nexusBronze/25 shadow-tactical bg-nexusDark z-0"></div>
+                <p class="text-[10px] font-mono text-gray-500 text-center">
+                    Los puntos en vivo indican evaluaciones en Chacao: verde (leve), naranja (moderado), rojo (crítico).
+                </p>
             </div>
 
             <!-- LOCAL TRANSMISSION QUEUE -->
@@ -405,6 +452,23 @@
                                 GUARDAR CENTRO
                             </button>
                         </form>
+                    </div>
+
+                    <!-- CONSOLA DE MENSAJERÍA PUSH (ACOPIO) -->
+                    <div class="glass-panel p-5 rounded-xl space-y-4 shadow-tactical">
+                        <h3 class="font-tactical font-bold text-blue-400 tracking-wider flex items-center border-b border-nexusBronze/20 pb-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-blue-500 mr-2 status-pulse-dot"></span>
+                            CONSOLA DE MENSAJERÍA PUSH
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-[10px] font-mono uppercase text-gray-400 mb-0.5">Mensaje de Aviso / Alerta</label>
+                                <textarea id="admin-message" rows="3" placeholder="Ej: Protección Civil solicita médicos voluntarios..." class="w-full p-2.5 glass-input rounded text-white text-xs resize-none"></textarea>
+                            </div>
+                            <button id="btn-send-alert" class="w-full p-2.5 bg-blue-500/20 hover:bg-blue-500 text-blue-400 hover:text-white rounded border border-blue-500/40 font-tactical font-bold text-xs tracking-widest uppercase transition-all duration-150">
+                                TRANSMITIR A LA RED
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Relief Centers Manager List -->
@@ -517,6 +581,7 @@
         let forceOfflineMock = false;
         let isAdmin = false;
         let globalCenters = [];
+        let map = null;
 
         // UI View Elements
         const authView = document.getElementById('auth-view');
@@ -572,6 +637,14 @@
         const damageSlider = document.getElementById('damage-slider');
         const sliderValBadge = document.getElementById('slider-val-badge');
         const damageDesc = document.getElementById('damage-desc');
+
+        // V2 DOM elements
+        const meshCountText = document.getElementById('mesh-count');
+        const seismicAlert = document.getElementById('seismic-alert');
+        const broadcastAlert = document.getElementById('broadcast-alert');
+        const broadcastMessageText = document.getElementById('broadcast-message-text');
+        const adminMessage = document.getElementById('admin-message');
+        const btnSendAlert = document.getElementById('btn-send-alert');
 
         // Queue array for fully manual simulated transmission
         let mockQueue = JSON.parse(localStorage.getItem('nexus_mock_queue') || '[]');
@@ -847,6 +920,19 @@
                         reports.push({ id: doc.id, ...doc.data() });
                     });
                     renderAdminDamage(reports);
+                    loadMapMarkers(); // Draw Leaflet map markers
+                });
+
+                // Subscribe to Broadcast Alerts (Authority messaging console)
+                const broadcastQuery = query(collection(db, "mensajes_acopio"), orderBy("timestamp", "desc"), limit(1));
+                onSnapshot(broadcastQuery, (snapshot) => {
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        if (data && data.mensaje) {
+                            broadcastMessageText.innerText = data.mensaje;
+                            broadcastAlert.classList.remove('hidden');
+                        }
+                    });
                 });
 
                 return true;
@@ -972,6 +1058,8 @@
 
             const nombre = document.getElementById('nombre').value.trim();
             const cedula = document.getElementById('cedula').value.trim().toUpperCase();
+            const correo = document.getElementById('correo').value.trim();
+            const instagram = document.getElementById('instagram').value.trim();
             const edificio = document.getElementById('edificio').value;
             const habitantes = parseInt(document.getElementById('habitantes').value);
 
@@ -985,6 +1073,8 @@
             const userData = {
                 nombre,
                 cedula,
+                correo,
+                instagram,
                 edificio,
                 habitantes,
                 timestamp: new Date().toISOString()
@@ -1017,6 +1107,7 @@
             // Transition views
             authView.classList.add('hidden');
             dashView.classList.remove('hidden');
+            setTimeout(initMap, 500);
         });
 
         // AUTO-LOGIN IF SESSION ACTIVE
@@ -1028,6 +1119,7 @@
                 userDisplayId.innerText = currentUser.cedula;
                 authView.classList.add('hidden');
                 dashView.classList.remove('hidden');
+                setTimeout(initMap, 500);
             } catch (e) {
                 console.error("Error cargando sesión activa:", e);
                 localStorage.removeItem('nexus_user');
@@ -1435,10 +1527,202 @@
             adminView.classList.add('hidden');
             if (currentUser) {
                 dashView.classList.remove('hidden');
+                setTimeout(initMap, 500);
             } else {
                 authView.classList.remove('hidden');
             }
         });
+
+        // ==========================================
+        // V2 ADITIONAL CAPABILITIES (MAPS, SENSOR, P2P MESH, ALERTS)
+        // ==========================================
+
+        // Initialize Leaflet Map (Dark theme tiles)
+        function initMap() {
+            if (map) return;
+            try {
+                // Coordinates for Plaza Bolívar Chacao
+                map = L.map('map', { zoomControl: false }).setView([10.4936, -66.8524], 14);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; CartoDB',
+                    maxZoom: 19
+                }).addTo(map);
+                
+                // Add zoom control at top right
+                L.control.zoom({ position: 'topright' }).addTo(map);
+                console.log('[Leaflet Map] Inicializado con éxito.');
+                
+                // Load damage markers
+                loadMapMarkers();
+            } catch (err) {
+                console.error('[Leaflet Map] Error al inicializar:', err);
+            }
+        }
+
+        let mapMarkers = [];
+        
+        function loadMapMarkers() {
+            if (!map) return;
+            
+            // Clear existing markers
+            mapMarkers.forEach(m => map.removeLayer(m));
+            mapMarkers = [];
+            
+            if (!isSimulationMode && db) {
+                // Real-time Firestore markers
+                const { collection, query, onSnapshot } = L.add ? { collection: null } : {}; // dummy fallback
+                // Subscribe directly in Firestore
+                const q = query ? query(collection(db, "reportes_danio")) : null;
+                // Wait! Since setupFirebase already registers this, we can pull global markers
+                // Or query directly from firestore:
+                import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js").then(({ collection, query, onSnapshot }) => {
+                    const q = query(collection(db, "reportes_danio"));
+                    onSnapshot(q, (snapshot) => {
+                        mapMarkers.forEach(m => map.removeLayer(m));
+                        mapMarkers = [];
+                        snapshot.forEach((doc) => {
+                            addMarkerToMap(doc.data());
+                        });
+                    });
+                });
+            } else {
+                // Load local mock markers
+                const mockDamageList = JSON.parse(localStorage.getItem('nexus_mock_damage') || '[]');
+                mockDamageList.forEach(report => {
+                    addMarkerToMap(report);
+                });
+            }
+        }
+        
+        function addMarkerToMap(data) {
+            if (!map) return;
+            
+            // Coordinates for Plaza Bolívar Chacao as center
+            let lat = 10.4936;
+            let lng = -66.8524;
+            
+            const sectorOffsets = {
+                "Alrededores Plaza Bolivar": { lat: 10.4936, lng: -66.8524 },
+                "Casco Central Chacao": { lat: 10.4925, lng: -66.8510 },
+                "Bello Campo": { lat: 10.4880, lng: -66.8550 },
+                "El Rosal": { lat: 10.4870, lng: -66.8610 },
+                "Altamira": { lat: 10.4970, lng: -66.8480 },
+                "Los Palos Grandes": { lat: 10.4980, lng: -66.8430 }
+            };
+            
+            const offset = sectorOffsets[data.edificio] || { lat: 10.4936, lng: -66.8524 };
+            // Add a small pseudo-random offset so markers don't overlap completely
+            const seed = parseInt(data.timestamp ? data.timestamp.replace(/\D/g, '').substring(0, 6) : '0') || Math.random() * 10000;
+            const pseudoRandomLat = offset.lat + (Math.sin(seed) * 0.0018);
+            const pseudoRandomLng = offset.lng + (Math.cos(seed) * 0.0018);
+            
+            let color = '#22c55e'; // Green (1-3)
+            if (data.nivel_danio > 3) color = '#f59e0b'; // Orange (4-6)
+            if (data.nivel_danio > 7) color = '#ef4444'; // Red (7-10)
+            
+            const marker = L.circleMarker([pseudoRandomLat, pseudoRandomLng], {
+                radius: Math.max(6, data.nivel_danio * 1.8),
+                fillColor: color,
+                color: color,
+                weight: 1,
+                opacity: 0.95,
+                fillOpacity: 0.6
+            }).addTo(map);
+            
+            marker.bindPopup(`
+                <div class="text-xs text-nexusDark font-sans">
+                    <p class="font-bold uppercase text-nexusNavyLight">${data.edificio || 'Desconocido'}</p>
+                    <p class="font-mono mt-0.5 text-nexusRed font-black">Daño: ${data.nivel_danio || 1}/10</p>
+                    ${data.comentarios ? `<p class="italic mt-1 text-[10px] text-gray-600">"${data.comentarios}"</p>` : ''}
+                </div>
+            `);
+            
+            mapMarkers.push(marker);
+        }
+
+        // Broadcast Authority Message Transmission
+        btnSendAlert.addEventListener('click', async () => {
+            const msg = adminMessage.value.trim();
+            if (!msg) {
+                alert("Por favor escribe un mensaje antes de transmitir.");
+                return;
+            }
+            
+            const alertData = {
+                mensaje: msg,
+                timestamp: new Date().toISOString()
+            };
+
+            if (!isSimulationMode && db) {
+                try {
+                    const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                    await addDoc(collection(db, "mensajes_acopio"), alertData);
+                    adminMessage.value = '';
+                    alert("Mensaje oficial transmitido a todos los nodos en vivo.");
+                } catch (err) {
+                    alert("Error al enviar alerta a Firestore: " + err.message);
+                }
+            } else {
+                // Simulation mode
+                localStorage.setItem('nexus_mock_broadcast', JSON.stringify(alertData));
+                broadcastMessageText.innerText = msg;
+                broadcastAlert.classList.remove('hidden');
+                adminMessage.value = '';
+                alert("Mensaje simulado transmitido a la red local.");
+            }
+        });
+
+        // Web Seismograph Event Listener (devicemotion sensor)
+        if (window.DeviceMotionEvent) {
+            window.addEventListener('devicemotion', async (event) => {
+                const acc = event.accelerationIncludingGravity;
+                if (!acc) return;
+                
+                // Calculate G force acceleration
+                const force = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
+                
+                // If acceleration force exceeds 15 m/s² (anomalous seismic activity)
+                if (force > 15) {
+                    seismicAlert.classList.remove('hidden');
+                    
+                    const sensorAlert = {
+                        fuerza: force.toFixed(2),
+                        timestamp: new Date().toISOString(),
+                        usuario: currentUser ? currentUser.cedula : 'Anónimo'
+                    };
+                    
+                    if (!isSimulationMode && db) {
+                        try {
+                            const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                            await addDoc(collection(db, "alertas_sensores"), sensorAlert);
+                            console.log('[Sismógrafo] Alerta de temblor fuerte enviada a Firestore.');
+                        } catch (err) {
+                            console.warn('[Sismógrafo] Error enviando alerta sísmica:', err.message);
+                        }
+                    } else {
+                        console.log('[Sismógrafo Simulador] Temblor detectado localmente:', force);
+                    }
+                    
+                    // Hide after 6 seconds
+                    setTimeout(() => {
+                        seismicAlert.classList.add('hidden');
+                    }, 6000);
+                }
+            });
+        }
+
+        // Active Mesh Node Simulator Loop
+        function startMeshCounter() {
+            setInterval(() => {
+                const count = Math.floor(Math.random() * 31) + 15; // Random number between 15 and 45
+                meshCountText.innerText = `${count} Nodos`;
+            }, 8000);
+            
+            // Set initial value immediately
+            const initialCount = Math.floor(Math.random() * 31) + 15;
+            meshCountText.innerText = `${initialCount} Nodos`;
+        }
+        startMeshCounter();
 
         // REGISTER SERVICE WORKER FOR PWA SUPPORT WITH UPDATE DETECTION
         if ('serviceWorker' in navigator) {
