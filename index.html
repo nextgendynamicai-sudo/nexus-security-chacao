@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nexus Security Chacao - Emergencias Sísmicas</title>
-    <!-- Web App Capabilities -->
+    <!-- Web App Capabilities & Cache Busting -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0A1128">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <link rel="manifest" href="manifest.json">
     
     <!-- Leaflet.js CDNs -->
@@ -695,7 +698,7 @@
     <!-- MAIN APP SCRIPT -->
     <script type="module">
         // V4 DATA WIPE & MIGRATION
-        const APP_VERSION = "4.1.0";
+        const APP_VERSION = "4.2.0";
         if (localStorage.getItem('nexus_app_version') !== APP_VERSION) {
             console.log("[V4 MIGRATION] Purging old local storage data...");
             const fbConfig = localStorage.getItem('nexus_fb_config');
@@ -703,6 +706,44 @@
             if (fbConfig) localStorage.setItem('nexus_fb_config', fbConfig); // keep fb config
             localStorage.setItem('nexus_app_version', APP_VERSION);
         }
+
+        // NEXUS CACHE BUSTER (Anti-PWA Freeze Protocol)
+        // Detects if the device is stuck in an old cache and forcefully shatters it
+        async function checkCriticalUpdates() {
+            try {
+                const response = await fetch('./index.html?v=' + new Date().getTime(), {
+                    cache: 'no-store',
+                    headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
+                });
+                const text = await response.text();
+                
+                const liveVersionMatch = text.match(/const APP_VERSION = "([^"]+)"/);
+                if (liveVersionMatch && liveVersionMatch[1]) {
+                    const liveVersion = liveVersionMatch[1];
+                    if (liveVersion !== APP_VERSION) {
+                        console.log(`[ALERTA TÁCTICA] Versión Viva (${liveVersion}) difiere de Local (${APP_VERSION}). Forzando Purga...`);
+                        
+                        // Destroy Service Workers
+                        if ('serviceWorker' in navigator) {
+                            const regs = await navigator.serviceWorker.getRegistrations();
+                            for (let r of regs) await r.unregister();
+                        }
+                        
+                        // Wipe Cache Storage
+                        if ('caches' in window) {
+                            const cacheNames = await caches.keys();
+                            for (let c of cacheNames) await caches.delete(c);
+                        }
+                        
+                        // Force Reload
+                        window.location.href = window.location.pathname + '?v=' + new Date().getTime();
+                    }
+                }
+            } catch (err) {
+                console.warn("[Cache Buster] No se pudo comprobar actualizaciones en vivo:", err);
+            }
+        }
+        setTimeout(checkCriticalUpdates, 2000);
 
         // Global system mode and database reference
         let db = null;
