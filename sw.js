@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nexus-chacao-v3';
+const CACHE_NAME = 'nexus-chacao-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

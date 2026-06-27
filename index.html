@@ -546,6 +546,30 @@
                         </div>
                     </div>
 
+                    <!-- GESTIÓN DE ROLES (SOLO ROOT) -->
+                    <div id="rbac-panel" class="hidden glass-panel p-5 rounded-xl space-y-4 border border-nexusRed/50 shadow-[0_0_15px_rgba(230,57,70,0.2)]">
+                        <h3 class="font-tactical font-bold text-nexusRed tracking-wider flex items-center border-b border-nexusRed/30 pb-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-nexusRed mr-2 status-pulse-dot"></span>
+                            GESTIÓN DE AUTORIDADES (MANDO ABSOLUTO)
+                        </h3>
+                        <p class="text-[10px] font-mono text-gray-400">Asigna permisos administrativos a ciudadanos registrados mediante su cédula.</p>
+                        
+                        <div class="space-y-3">
+                            <input type="text" id="rbac-cedula" placeholder="Cédula (Ej. V-12345678)" class="w-full p-2.5 glass-input rounded text-white text-xs font-mono uppercase">
+                            <select id="rbac-role" class="w-full p-2.5 glass-input rounded text-white text-xs font-mono">
+                                <option value="ALCALDE">Alcalde</option>
+                                <option value="DIPUTADO">Diputado</option>
+                                <option value="POLICIA">Policía Municipal</option>
+                                <option value="SALUD_CHACAO">Salud Chacao</option>
+                                <option value="GOBERNACION">Gobernación</option>
+                                <option value="CONCEJAL">Concejal</option>
+                            </select>
+                            <button id="btn-assign-role" class="w-full p-2.5 bg-nexusRed/20 hover:bg-nexusRed text-nexusRed hover:text-white rounded border border-nexusRed/50 font-tactical font-bold text-xs tracking-widest uppercase transition-all duration-150">
+                                ASIGNAR ROL
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Relief Centers Manager List -->
                     <div class="glass-panel p-5 rounded-xl space-y-3 shadow-tactical">
                         <h4 class="text-xs font-mono tracking-wider text-gray-400 border-b border-nexusBronze/10 pb-1">CENTROS REGISTRADOS</h4>
@@ -648,13 +672,25 @@
 
     <!-- MAIN APP SCRIPT -->
     <script type="module">
+        // V4 DATA WIPE & MIGRATION
+        const APP_VERSION = "4.0.0";
+        if (localStorage.getItem('nexus_app_version') !== APP_VERSION) {
+            console.log("[V4 MIGRATION] Purging old local storage data...");
+            const fbConfig = localStorage.getItem('nexus_fb_config');
+            localStorage.clear();
+            if (fbConfig) localStorage.setItem('nexus_fb_config', fbConfig); // keep fb config
+            localStorage.setItem('nexus_app_version', APP_VERSION);
+        }
+
         // Global system mode and database reference
         let db = null;
         let isSimulationMode = true;
         let activeFirebaseConfig = null;
         let currentUser = null;
-        let forceOfflineMock = false;
         let isAdmin = false;
+        let isRoot = false;
+        let myRole = 'CIUDADANO';
+        let forceOfflineMock = false;
         let globalCenters = [];
         let map = null;
 
@@ -937,7 +973,7 @@
                 console.log('[Firebase DB] Inicializado con éxito con persistencia IndexedDB habilitada.');
 
                 // Subscribe to Real Firestore Acopio Centers feed
-                const acopioQuery = query(collection(db, "centros_acopio"), orderBy("updatedAt", "desc"), limit(10));
+                const acopioQuery = query(collection(db, "centros_acopio_v4"), orderBy("updatedAt", "desc"), limit(10));
                 
                 onSnapshot(acopioQuery, (snapshot) => {
                     const centers = [];
@@ -967,7 +1003,7 @@
                 });
 
                 // Subscribe to Registrations (Metrics)
-                onSnapshot(collection(db, "registros_chacao"), (snapshot) => {
+                onSnapshot(collection(db, "registros_chacao_v4"), (snapshot) => {
                     let totalReg = 0;
                     let totalHab = 0;
                     snapshot.forEach((doc) => {
@@ -980,7 +1016,7 @@
                 });
 
                 // Subscribe to SOS Alerts
-                onSnapshot(collection(db, "alertas_sos"), (snapshot) => {
+                onSnapshot(collection(db, "alertas_sos_v4"), (snapshot) => {
                     const alerts = [];
                     snapshot.forEach((doc) => {
                         alerts.push({ id: doc.id, ...doc.data() });
@@ -989,7 +1025,7 @@
                 });
 
                 // Subscribe to Damage Reports
-                onSnapshot(collection(db, "reportes_danio"), (snapshot) => {
+                onSnapshot(collection(db, "reportes_danio_v4"), (snapshot) => {
                     const reports = [];
                     snapshot.forEach((doc) => {
                         reports.push({ id: doc.id, ...doc.data() });
@@ -999,7 +1035,7 @@
                 });
 
                 // Subscribe to Broadcast Alerts (Authority messaging console)
-                const broadcastQuery = query(collection(db, "mensajes_acopio"), orderBy("timestamp", "desc"), limit(1));
+                const broadcastQuery = query(collection(db, "mensajes_acopio_v4"), orderBy("timestamp", "desc"), limit(1));
                 onSnapshot(broadcastQuery, (snapshot) => {
                     snapshot.forEach((doc) => {
                         const data = doc.data();
@@ -1027,7 +1063,7 @@
             try {
                 const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
                 const batchPromises = defaultAcopioCenters.map(center => {
-                    return addDoc(collection(db, "centros_acopio"), {
+                    return addDoc(collection(db, "centros_acopio_v4"), {
                         nombre: center.name,
                         estado: center.status,
                         necesidades: center.needs,
@@ -1174,7 +1210,7 @@
             if (!isSimulationMode && db) {
                 try {
                     const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-                    await addDoc(collection(db, "registros_chacao"), userData);
+                    await addDoc(collection(db, "registros_chacao_v4"), userData);
                     console.log('[Firebase DB] Registro enviado en vivo.');
                 } catch (err) {
                     console.warn('[Firebase DB Offline-Enqueued] Error en registro de red, guardado en cache de Firestore:', err.message);
@@ -1190,7 +1226,28 @@
             authView.classList.add('hidden');
             dashView.classList.remove('hidden');
             setTimeout(initMap, 500);
+            checkUserRole(userData.cedula);
         });
+
+        async function checkUserRole(cedula) {
+            if ("Notification" in window && Notification.permission !== "granted") {
+                Notification.requestPermission();
+            }
+            if (!isSimulationMode && db) {
+                try {
+                    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                    const roleSnap = await getDoc(doc(db, "roles_autoridad_v4", cedula));
+                    if (roleSnap.exists()) {
+                        isAdmin = true;
+                        myRole = roleSnap.data().role;
+                        btnAdminTab.classList.remove('hidden');
+                        console.log(`[RBAC] Autoridad detectada: ${myRole}`);
+                    }
+                } catch (e) {
+                    console.error("[RBAC] Error validando rol:", e);
+                }
+            }
+        }
 
         // AUTO-LOGIN IF SESSION ACTIVE
         const savedSession = localStorage.getItem('nexus_user');
@@ -1202,6 +1259,7 @@
                 authView.classList.add('hidden');
                 dashView.classList.remove('hidden');
                 setTimeout(initMap, 500);
+                setTimeout(() => checkUserRole(currentUser.cedula), 1000);
             } catch (e) {
                 console.error("Error cargando sesión activa:", e);
                 localStorage.removeItem('nexus_user');
@@ -1307,7 +1365,7 @@
                     if (!isSimulationMode && db) {
                         try {
                             const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-                            await addDoc(collection(db, "alertas_sos"), sosData);
+                            await addDoc(collection(db, "alertas_sos_v4"), sosData);
                             alert("SOS Emitido y geolocalizado en red Firestore.");
                         } catch (err) {
                             console.warn('[Firebase DB Offline-Enqueued] SOS encolado en cache local:', err.message);
@@ -1338,7 +1396,7 @@
 
                     if (!isSimulationMode && db) {
                         import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js").then(({ collection, addDoc }) => {
-                            addDoc(collection(db, "alertas_sos"), sosDataNoGeo);
+                            addDoc(collection(db, "alertas_sos_v4"), sosDataNoGeo);
                             alert("SOS Emitido (Sin GPS por restricción o error) y guardado en Firestore.");
                         });
                     } else {
@@ -1375,7 +1433,7 @@
                     if (!isSimulationMode && db) {
                         try {
                             const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-                            await addDoc(collection(db, "reportes_triaje"), triajeData);
+                            await addDoc(collection(db, "reportes_triaje_v4"), triajeData);
                             alert(`Reporte médico ${level} transmitido con éxito.`);
                         } catch (err) {
                             alert("Reporte médico guardado en caché.");
@@ -1406,7 +1464,7 @@
             if (!isSimulationMode && db) {
                 try {
                     const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-                    await addDoc(collection(db, "reportes_danio"), damageData);
+                    await addDoc(collection(db, "reportes_danio_v4"), damageData);
                     alert("Reporte de daños enviado con éxito.");
                     document.getElementById('damage-comment').value = '';
                 } catch (err) {
@@ -1568,7 +1626,7 @@
             if (!isSimulationMode && db) {
                 try {
                     const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-                    await deleteDoc(doc(db, "alertas_sos", id));
+                    await deleteDoc(doc(db, "alertas_sos_v4", id));
                 } catch (e) {
                     alert("Error: " + e.message);
                 }
@@ -1606,7 +1664,7 @@
             if (!isSimulationMode && db) {
                 try {
                     const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-                    await deleteDoc(doc(db, "centros_acopio", id));
+                    await deleteDoc(doc(db, "centros_acopio_v4", id));
                 } catch (e) {
                     alert("Error: " + e.message);
                 }
@@ -1634,7 +1692,7 @@
                 try {
                     const { collection, addDoc, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
                     if (editingCenterId) {
-                        await setDoc(doc(db, "centros_acopio", editingCenterId), {
+                        await setDoc(doc(db, "centros_acopio_v4", editingCenterId), {
                             nombre,
                             necesidades,
                             estado,
@@ -1643,7 +1701,7 @@
                         editingCenterId = null;
                         document.getElementById('btn-save-acopio').innerText = "GUARDAR CENTRO";
                     } else {
-                        await addDoc(collection(db, "centros_acopio"), {
+                        await addDoc(collection(db, "centros_acopio_v4"), {
                             nombre,
                             necesidades,
                             estado,
@@ -1684,11 +1742,13 @@
         // Admin Access Code Validation
         btnLoginAdmin.addEventListener('click', () => {
             const code = adminCodeInput.value.trim();
-            if (code === 'CHACAO911') {
+            if (code === 'NEXUS-ROOT-777') {
                 isAdmin = true;
+                isRoot = true;
                 btnAdminTab.classList.remove('hidden');
                 adminSettingsContainer.classList.remove('hidden');
-                alert("Acceso de Comando Concedido. Se han desbloqueado el panel de control y las configuraciones avanzadas.");
+                document.getElementById('rbac-panel').classList.remove('hidden');
+                alert("Acceso ROOT Concedido. Tienes Mando Absoluto.");
                 settingsPanel.classList.add('translate-x-full');
                 adminCodeInput.value = '';
                 
@@ -1697,6 +1757,29 @@
                 }
             } else {
                 alert("Código de acceso táctico incorrecto.");
+            }
+        });
+
+        document.getElementById('btn-assign-role').addEventListener('click', async () => {
+            const rbacCed = document.getElementById('rbac-cedula').value.trim().toUpperCase();
+            const rbacRole = document.getElementById('rbac-role').value;
+            if (!rbacCed) return alert("Ingrese cédula");
+
+            if (!isSimulationMode && db) {
+                try {
+                    const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                    await setDoc(doc(db, "roles_autoridad_v4", rbacCed), {
+                        role: rbacRole,
+                        grantedBy: "ROOT",
+                        updatedAt: new Date().toISOString()
+                    });
+                    alert(`Rol ${rbacRole} asignado a ${rbacCed}`);
+                    document.getElementById('rbac-cedula').value = '';
+                } catch (err) {
+                    alert("Error asignando rol: " + err.message);
+                }
+            } else {
+                alert("Debes estar conectado a Firebase real para asignar roles de autoridad.");
             }
         });
 
@@ -1755,7 +1838,7 @@
             if (!isSimulationMode && db) {
                 import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js").then(({ collection, query, onSnapshot }) => {
                     // Subscribe to Damage
-                    const qDanio = query(collection(db, "reportes_danio"));
+                    const qDanio = query(collection(db, "reportes_danio_v4"));
                     onSnapshot(qDanio, (snapshot) => {
                         // For simplicity, we just clear and redraw all on any update
                         mapMarkers.forEach(m => map.removeLayer(m));
@@ -1773,7 +1856,7 @@
                     });
                     
                     // Subscribe to Live SOS Alerts
-                    const qSos = query(collection(db, "alertas_sos"));
+                    const qSos = query(collection(db, "alertas_sos_v4"));
                     onSnapshot(qSos, (snapshot) => {
                         // Clear markers maybe? Better just append them or rely on the combined redraw
                         // Since this is real time, let's just redraw SOS on top
@@ -1889,7 +1972,7 @@
             if (!isSimulationMode && db) {
                 try {
                     const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-                    await addDoc(collection(db, "mensajes_acopio"), alertData);
+                    await addDoc(collection(db, "mensajes_acopio_v4"), alertData);
                     adminMessage.value = '';
                     alert("Mensaje oficial transmitido a todos los nodos en vivo.");
                 } catch (err) {
@@ -1927,7 +2010,7 @@
                     if (!isSimulationMode && db) {
                         try {
                             const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-                            await addDoc(collection(db, "alertas_sensores"), sensorAlert);
+                            await addDoc(collection(db, "alertas_sensores_v4"), sensorAlert);
                             console.log('[Sismógrafo] Alerta de temblor fuerte enviada a Firestore.');
                         } catch (err) {
                             console.warn('[Sismógrafo] Error enviando alerta sísmica:', err.message);
