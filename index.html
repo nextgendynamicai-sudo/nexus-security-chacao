@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nexus Security Chacao - Emergencias Sísmicas</title>
+    <!-- Web App Capabilities -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0A1128">
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Tailwind CSS and Google Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        tactical: ['Orbitron', 'sans-serif']
+                    },
+                    colors: {
+                        nexusDark: '#050B1A',
+                        nexusNavy: '#0A1128',
+                        nexusNavyLight: '#121F42',
+                        nexusRed: '#E63946',
+                        nexusRedGlow: 'rgba(230, 57, 70, 0.4)',
+                        nexusBronze: '#C5A184',
+                        nexusBronzeGlow: 'rgba(197, 161, 132, 0.3)'
+                    },
+                    boxShadow: {
+                        tactical: '0 0 15px rgba(197, 161, 132, 0.25)',
+                        sos: '0 0 35px rgba(230, 57, 70, 0.6)',
+                        sosPulse: '0 0 50px rgba(230, 57, 70, 0.8)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #050B1A;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #C5A184;
+            border-radius: 3px;
+        }
+
+        /* Glassmorphism utility classes */
+        .glass-panel {
+            background: rgba(10, 17, 40, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(197, 161, 132, 0.2);
+        }
+
+        .glass-input {
+            background: rgba(5, 11, 26, 0.6);
+            border: 1px solid rgba(197, 161, 132, 0.3);
+            transition: all 0.3s ease;
+        }
+        .glass-input:focus {
+            outline: none;
+            border-color: #E63946;
+            box-shadow: 0 0 10px rgba(230, 57, 70, 0.3);
+        }
+
+        /* Tactical Pulse Animations */
+        @keyframes radar-sweep {
+            0% {
+                transform: scale(0.95);
+                opacity: 0.85;
+                box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.7);
+            }
+            70% {
+                transform: scale(1.05);
+                opacity: 0.5;
+                box-shadow: 0 0 0 20px rgba(230, 57, 70, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                opacity: 0.85;
+                box-shadow: 0 0 0 0 rgba(230, 57, 70, 0);
+            }
+        }
+        .btn-sos-pulse {
+            animation: radar-sweep 2s infinite;
+        }
+
+        @keyframes status-pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        .status-pulse-dot {
+            animation: status-pulse 1.5s infinite;
+        }
+
+        /* Scanline effect for tactical monitor theme */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.03),
+                rgba(0, 255, 0, 0.01),
+                rgba(0, 0, 255, 0.03)
+            );
+            background-size: 100% 4px, 6px 100%;
+            z-index: 9999;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-nexusDark text-gray-100 h-screen flex flex-col font-sans select-none overflow-hidden relative">
+    
+    <!-- Retro tactical overlay -->
+    <div class="scanlines"></div>
+
+    <!-- Background decorative grids -->
+    <div class="absolute inset-0 bg-[linear-gradient(rgba(197,161,132,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(197,161,132,0.03)_1px,transparent_1px)] bg-[size:30px_30px] pointer-events-none"></div>
+
+    <!-- MAIN HEADER -->
+    <header class="bg-nexusNavy/90 backdrop-blur-md px-6 py-4 border-b border-nexusBronze/30 flex justify-between items-center z-10 shadow-lg relative">
+        <div class="flex items-center space-x-3">
+            <!-- Tactical Logo (Embedded SVG) -->
+            <svg class="w-8 h-8 text-nexusBronze" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.248-8.25-3.285z"></path>
+            </svg>
+            <div>
+                <h1 class="text-lg font-bold font-tactical text-nexusBronze tracking-wider leading-none">NEXUS SECURITY</h1>
+                <p class="text-[9px] font-mono tracking-widest text-nexusRed leading-none mt-1">SECTOR CHACAO / EMERGENCIAS</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center space-x-4">
+            <!-- Connection Mode Label -->
+            <div id="simulation-banner" class="hidden px-2.5 py-0.5 rounded border border-yellow-500/40 bg-yellow-500/10 text-yellow-500 text-[10px] font-mono tracking-wider">
+                MOCK
+            </div>
+            
+            <!-- Network status indicator -->
+            <div class="flex items-center space-x-2">
+                <span id="network-text" class="text-xs font-mono text-green-500 uppercase tracking-widest">En Línea</span>
+                <div id="network-status" class="w-3.5 h-3.5 rounded-full bg-green-500 shadow-[0_0_12px_#22c55e] status-pulse-dot"></div>
+            </div>
+
+            <!-- Admin View Toggle Button -->
+            <button id="btn-admin-tab" class="hidden text-nexusBronze hover:text-white transition-colors duration-200 text-[10px] font-mono font-bold uppercase border border-nexusBronze/40 px-2 py-1 rounded shadow-[0_0_10px_rgba(197,161,132,0.1)] hover:shadow-[0_0_15px_rgba(197,161,132,0.3)] tracking-wider mr-2">
+                ADMIN
+            </button>
+
+            <!-- Settings button -->
+            <button id="btn-settings" class="text-nexusBronze hover:text-white transition-colors duration-200" title="Configurar Firebase">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.43l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.991l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.645-.869l.214-1.28z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- CONTENT WORKSPACE -->
+    <main id="app-content" class="flex-1 p-5 overflow-y-auto z-10 relative">
+        
+        <!-- REGISTRATION VIEW (AUTH) -->
+        <section id="auth-view" class="max-w-md mx-auto my-4 space-y-6">
+            <div class="glass-panel p-6 rounded-xl shadow-tactical">
+                <h2 class="text-2xl font-bold font-tactical text-nexusBronze tracking-wider mb-2">REGISTRO DE EMERGENCIA</h2>
+                <p class="text-xs text-gray-400 mb-6">Completa tus datos tácticos para encolar tu reporte. Esto se almacena localmente y se transmite en cuanto exista red.</p>
+                
+                <form id="reg-form" class="space-y-4" onsubmit="return false;">
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-widest text-nexusBronze mb-1">Nombre Completo</label>
+                        <input type="text" id="nombre" placeholder="Ej. Juan Pérez" class="w-full p-3 glass-input rounded text-white placeholder-gray-600 text-sm" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-widest text-nexusBronze mb-1">Cédula de Identidad</label>
+                        <input type="text" id="cedula" placeholder="Ej. V-12345678" class="w-full p-3 glass-input rounded text-white placeholder-gray-600 text-sm font-mono" required>
+                        <span id="cedula-error" class="hidden text-xs text-nexusRed mt-1 font-mono">Formato inválido. Usar V- o E- seguido de números.</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-widest text-nexusBronze mb-1">Ubicación / Sector Edificio</label>
+                        <select id="edificio" class="w-full p-3 glass-input rounded text-white text-sm" required>
+                            <option value="" disabled selected class="bg-nexusNavy">Selecciona sector...</option>
+                            <optgroup label="Casco Histórico" class="bg-nexusNavy text-nexusBronze font-bold">
+                                <option value="Alrededores Plaza Bolivar" class="bg-nexusNavy text-white">Alrededores Plaza Bolívar</option>
+                                <option value="Casco Central Chacao" class="bg-nexusNavy text-white">Casco Central Chacao</option>
+                            </optgroup>
+                            <optgroup label="Sectores Residenciales" class="bg-nexusNavy text-nexusBronze font-bold">
+                                <option value="Bello Campo" class="bg-nexusNavy text-white">Bello Campo</option>
+                                <option value="El Rosal" class="bg-nexusNavy text-white">El Rosal</option>
+                                <option value="Altamira" class="bg-nexusNavy text-white">Altamira</option>
+                                <option value="Los Palos Grandes" class="bg-nexusNavy text-white">Los Palos Grandes</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-widest text-nexusBronze mb-1">Habitantes / Acompañantes</label>
+                        <input type="number" id="habitantes" min="0" max="50" placeholder="Personas actualmente contigo" class="w-full p-3 glass-input rounded text-white placeholder-gray-600 text-sm" required>
+                    </div>
+
+                    <button type="submit" id="btn-register" class="w-full p-4 mt-6 bg-nexusBronze hover:bg-nexusBronze/85 text-nexusDark font-black font-tactical rounded shadow-lg tracking-widest active:scale-95 transition-all duration-150 uppercase">
+                        REGISTRAR EN SISTEMA
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- DASHBOARD VIEW -->
+        <section id="dashboard-view" class="hidden max-w-lg mx-auto space-y-6 pb-8">
+            
+            <!-- User Status Header -->
+            <div class="glass-panel p-4 rounded-xl flex justify-between items-center text-xs font-mono">
+                <div>
+                    <span class="text-gray-400">Usuario:</span>
+                    <span id="user-display-name" class="text-nexusBronze font-bold ml-1">...</span>
+                </div>
+                <div>
+                    <span class="text-gray-400">ID:</span>
+                    <span id="user-display-id" class="text-nexusRed font-bold ml-1">...</span>
+                </div>
+            </div>
+
+            <!-- DYNAMIC ACOPIO FEED -->
+            <div class="glass-panel p-5 rounded-xl space-y-4">
+                <div class="flex justify-between items-center border-b border-nexusBronze/20 pb-2">
+                    <h3 class="font-tactical font-bold text-nexusBronze tracking-wider flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-nexusBronze" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11.5m-2 0a2 2 0 104 0 2 2 0 10-4 0M19 11.5H3m16 0a2 2 0 012 2v5.5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5.5a2 2 0 012-2m14 0V9a2 2 0 00-2-2H7a2 2 0 00-2 2v2.5"></path>
+                        </svg>
+                        CENTROS DE ACOPIO ACTIVOS
+                    </h3>
+                    <span class="text-[10px] font-mono bg-nexusBronze/20 text-nexusBronze px-2 py-0.5 rounded tracking-widest status-pulse-dot">MONITOR</span>
+                </div>
+                
+                <div id="acopio-feed" class="space-y-3 max-h-48 overflow-y-auto pr-1">
+                    <!-- Dynamic feed will load here -->
+                    <div class="p-3 bg-nexusNavy/55 rounded border border-gray-800 text-xs text-center text-gray-500">
+                        Cargando estado de centros de acopio...
+                    </div>
+                </div>
+            </div>
+
+            <!-- MASSIVE TACTICAL SOS BUTTON -->
+            <div class="glass-panel p-6 rounded-xl flex flex-col items-center justify-center space-y-4 relative overflow-hidden">
+                <div class="absolute top-2 left-2 text-[8px] font-mono tracking-widest text-nexusRed">DISPOSITIVO DE ALERTA RÁPIDA</div>
+                <div class="absolute top-2 right-2 text-[8px] font-mono tracking-widest text-gray-500" id="coords-text">GPS: INACTIVO</div>
+                
+                <div class="relative w-44 h-44 flex items-center justify-center mt-3">
+                    <button id="btn-sos" class="w-36 h-36 bg-nexusRed text-white font-black font-tactical text-3xl rounded-full shadow-sos hover:shadow-sosPulse active:scale-95 transition-all duration-200 border-4 border-white/20 flex flex-col items-center justify-center relative z-10 btn-sos-pulse">
+                        <span>SOS</span>
+                        <span class="text-[9px] font-mono tracking-widest mt-1 text-red-200">EMISIÓN LOCAL</span>
+                    </button>
+                    <!-- Pulse rings -->
+                    <div class="absolute inset-0 bg-nexusRed/20 rounded-full animate-ping pointer-events-none"></div>
+                </div>
+                
+                <p class="text-xs text-gray-400 text-center px-4">
+                    Al presionar SOS, se enviará instantáneamente tu ubicación exacta y cédula al centro de mando.
+                </p>
+            </div>
+
+            <!-- STRUCTURAL DAMAGE SLIDER -->
+            <div class="glass-panel p-5 rounded-xl space-y-4">
+                <div class="flex justify-between items-center border-b border-nexusBronze/20 pb-2">
+                    <h3 class="font-tactical font-bold text-nexusBronze tracking-wider">REPORTE DE DAÑO ESTRUCTURAL</h3>
+                    <span id="slider-val-badge" class="font-mono text-sm font-bold bg-green-500/20 text-green-400 border border-green-500/40 px-2 py-0.5 rounded">Nivel 1</span>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-[10px] font-mono text-gray-400 mb-1">
+                            <span>Mínimo (Leve)</span>
+                            <span>Crítico (Colapso)</span>
+                        </div>
+                        <input type="range" id="damage-slider" min="1" max="10" value="1" class="w-full h-2 bg-nexusNavy rounded-lg appearance-none cursor-pointer border border-nexusBronze/20 accent-nexusRed">
+                    </div>
+                    
+                    <div id="damage-desc" class="p-3 bg-green-500/10 border border-green-500/30 rounded text-xs text-green-300 font-mono">
+                        Leve: Fisuras superficiales en pintura, mampostería intacta. Estructura segura.
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-mono text-nexusBronze uppercase tracking-widest mb-1">Observación adicional (Opcional)</label>
+                        <textarea id="damage-comment" rows="2" placeholder="Ej. Fisuras en columna principal, vidrios rotos..." class="w-full p-2.5 glass-input rounded text-white placeholder-gray-600 text-xs resize-none"></textarea>
+                    </div>
+
+                    <button id="btn-report" class="w-full p-3 border border-nexusBronze hover:bg-nexusBronze hover:text-nexusDark text-nexusBronze rounded font-black font-tactical tracking-widest text-xs uppercase active:scale-95 transition-all duration-150">
+                        TRANSMITIR REPORTE
+                    </button>
+                </div>
+            </div>
+
+            <!-- LOCAL TRANSMISSION QUEUE -->
+            <div class="glass-panel p-4 rounded-xl space-y-2">
+                <h4 class="text-xs font-mono tracking-wider text-gray-400 flex justify-between items-center">
+                    <span>COLA DE TRANSMISIÓN OFFLINE</span>
+                    <span id="queue-count" class="bg-gray-800 text-white text-[10px] px-2 py-0.5 rounded font-mono">0 en espera</span>
+                </h4>
+                <div id="queue-list" class="space-y-2 max-h-32 overflow-y-auto text-xs font-mono text-gray-500">
+                    <p class="text-center py-2 text-gray-600">No hay reportes pendientes.</p>
+                </div>
+            </div>
+            
+        </section>
+
+        <!-- ADMIN COMMAND CENTER VIEW -->
+        <section id="admin-view" class="hidden max-w-5xl mx-auto space-y-6 pb-8">
+            <!-- Admin Header -->
+            <div class="glass-panel p-4 rounded-xl flex justify-between items-center shadow-tactical">
+                <div class="flex items-center space-x-2">
+                    <span class="w-3.5 h-3.5 rounded-full bg-nexusRed shadow-[0_0_12px_#E63946] status-pulse-dot"></span>
+                    <h2 class="text-xl font-bold font-tactical text-nexusRed tracking-wider uppercase">CENTRO DE CONTROL TÁCTICO</h2>
+                </div>
+                <button id="btn-admin-exit" class="px-4 py-2 border border-nexusBronze text-nexusBronze hover:bg-nexusBronze hover:text-nexusDark rounded font-black font-tactical text-xs tracking-wider uppercase transition-all duration-150 shadow-md">
+                    VISTA CIUDADANO
+                </button>
+            </div>
+
+            <!-- TACTICAL METRICS GRID -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="glass-panel p-4 rounded-xl border-l-4 border-nexusRed shadow-sm">
+                    <span class="text-[10px] font-mono text-gray-400 uppercase tracking-widest block">SOS Activos</span>
+                    <span id="metric-sos" class="text-3xl font-tactical font-black text-nexusRed mt-1 block">0</span>
+                </div>
+                <div class="glass-panel p-4 rounded-xl border-l-4 border-orange-500 shadow-sm">
+                    <span class="text-[10px] font-mono text-gray-400 uppercase tracking-widest block">Daños Reportados</span>
+                    <span id="metric-danio" class="text-3xl font-tactical font-black text-orange-400 mt-1 block">0</span>
+                </div>
+                <div class="glass-panel p-4 rounded-xl border-l-4 border-nexusBronze shadow-sm">
+                    <span class="text-[10px] font-mono text-gray-400 uppercase tracking-widest block">Ciudadanos Registrados</span>
+                    <span id="metric-registros" class="text-3xl font-tactical font-black text-nexusBronze mt-1 block">0</span>
+                </div>
+                <div class="glass-panel p-4 rounded-xl border-l-4 border-green-500 shadow-sm">
+                    <span class="text-[10px] font-mono text-gray-400 uppercase tracking-widest block">Total Personas</span>
+                    <span id="metric-habitantes" class="text-3xl font-tactical font-black text-green-400 mt-1 block">0</span>
+                </div>
+            </div>
+
+            <!-- TWO COLUMN COMMAND VIEW -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- COLUMN 1: LIVE ALERTS LOG -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- SOS Alerts Live Log -->
+                    <div class="glass-panel p-5 rounded-xl space-y-4 shadow-tactical">
+                        <h3 class="font-tactical font-bold text-nexusRed tracking-wider flex items-center border-b border-nexusBronze/20 pb-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-nexusRed mr-2 status-pulse-dot"></span>
+                            ALERTAS SOS TRANSMITIDAS
+                        </h3>
+                        <div id="admin-sos-list" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+                            <p class="text-center py-4 text-xs font-mono text-gray-500">No hay alertas SOS registradas.</p>
+                        </div>
+                    </div>
+
+                    <!-- Structural Damage Reports Live Log -->
+                    <div class="glass-panel p-5 rounded-xl space-y-4 shadow-tactical">
+                        <h3 class="font-tactical font-bold text-orange-400 tracking-wider flex items-center border-b border-nexusBronze/20 pb-2">
+                            EVALUACIONES DE DAÑO ESTRUCTURAL (SECTOR CHACAO)
+                        </h3>
+                        <div id="admin-damage-list" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+                            <p class="text-center py-4 text-xs font-mono text-gray-500">No hay reportes de daño estructural.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLUMN 2: RELIEF CENTER MANAGER -->
+                <div class="space-y-6">
+                    <div class="glass-panel p-5 rounded-xl space-y-4 shadow-tactical">
+                        <h3 class="font-tactical font-bold text-nexusBronze tracking-wider border-b border-nexusBronze/20 pb-2">
+                            GESTIÓN DE ACOPIOS
+                        </h3>
+                        <form id="acopio-manager-form" class="space-y-3" onsubmit="return false;">
+                            <div>
+                                <label class="block text-[10px] font-mono uppercase text-nexusBronze mb-0.5">Nombre del Centro</label>
+                                <input type="text" id="acopio-name" placeholder="Ej. Plaza Bolívar Chacao" class="w-full p-2.5 glass-input rounded text-white text-xs" required>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-mono uppercase text-nexusBronze mb-0.5">Necesidades / Requerimientos</label>
+                                <textarea id="acopio-needs" rows="3" placeholder="Ej. Agua, gasas, comida..." class="w-full p-2.5 glass-input rounded text-white text-xs resize-none" required></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-mono uppercase text-nexusBronze mb-0.5">Estado del Centro</label>
+                                <select id="acopio-status" class="w-full p-2.5 glass-input rounded text-white text-xs" required>
+                                    <option value="ACTIVO">ACTIVO (Verde)</option>
+                                    <option value="ALERTA">ALERTA (Amarillo)</option>
+                                    <option value="CRÍTICO">CRÍTICO (Rojo)</option>
+                                </select>
+                            </div>
+                            <button type="submit" id="btn-save-acopio" class="w-full p-3 bg-nexusBronze hover:bg-nexusBronze/90 text-nexusDark font-black font-tactical tracking-widest text-xs rounded uppercase active:scale-95 transition-all duration-150">
+                                GUARDAR CENTRO
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Relief Centers Manager List -->
+                    <div class="glass-panel p-5 rounded-xl space-y-3 shadow-tactical">
+                        <h4 class="text-xs font-mono tracking-wider text-gray-400 border-b border-nexusBronze/10 pb-1">CENTROS REGISTRADOS</h4>
+                        <div id="admin-acopio-list" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                            <p class="text-center py-2 text-xs font-mono text-gray-600">No hay centros guardados.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <!-- SETTINGS MODAL / SLIDE-IN PANEL -->
+    <div id="settings-panel" class="fixed inset-y-0 right-0 w-full max-w-md bg-nexusNavy/95 backdrop-blur-lg border-l border-nexusBronze/30 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out z-50 flex flex-col">
+        <div class="p-5 border-b border-nexusBronze/20 flex justify-between items-center">
+            <h3 class="font-tactical font-bold text-nexusBronze text-lg tracking-wider">CONFIGURACIÓN TÁCTICA</h3>
+            <button id="btn-close-settings" class="text-gray-400 hover:text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <div class="flex-1 p-6 overflow-y-auto space-y-6">
+            <!-- Citizen Session Info -->
+            <div class="space-y-4">
+                <h4 class="text-sm font-bold text-gray-200">SESIÓN DE CIUDADANO</h4>
+                <p class="text-xs text-gray-400">Administra tu registro y sesión local en el dispositivo.</p>
+                <button id="btn-reset-user" class="w-full p-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded text-gray-300 font-mono text-xs uppercase transition-colors">
+                    Cerrar Sesión / Cambiar Usuario
+                </button>
+            </div>
+
+            <!-- Admin Authentication -->
+            <div class="border-t border-nexusBronze/20 pt-6 space-y-4">
+                <h4 class="text-sm font-bold text-gray-200">ACCESO DE COMANDO</h4>
+                <p class="text-xs text-gray-400">Introduce el código táctico de administración para desbloquear el Centro de Control y configuraciones avanzadas.</p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-[10px] font-mono uppercase text-gray-400 mb-0.5">Código de Comando</label>
+                        <input type="password" id="admin-code-input" placeholder="Código de Acceso" class="w-full p-2.5 glass-input rounded text-white placeholder-gray-700 text-xs font-mono">
+                    </div>
+                    <button id="btn-login-admin" class="w-full p-2.5 border border-nexusBronze hover:bg-nexusBronze hover:text-nexusDark text-nexusBronze font-tactical font-bold text-xs tracking-widest rounded uppercase transition-colors">
+                        Desbloquear Tablero
+                    </button>
+                </div>
+            </div>
+
+            <!-- Admin & Firebase Advanced configurations (Hidden by default) -->
+            <div id="admin-settings-container" class="hidden space-y-6 border-t border-nexusBronze/20 pt-6">
+                <!-- Firebase credentials -->
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-sm font-bold text-gray-200">BASE DE DATOS FIREBASE</h4>
+                        <span id="firebase-status-badge" class="text-[10px] font-mono uppercase bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded">Simulada</span>
+                    </div>
+                    
+                    <p class="text-xs text-gray-400">
+                        Introduce la configuración de Firebase de tu consola gratuita para enlazar el sistema en vivo.
+                    </p>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-mono uppercase text-gray-400 mb-0.5">Firebase Config (JSON Completo)</label>
+                            <textarea id="fb-config-json" rows="6" class="w-full p-2.5 glass-input rounded text-white placeholder-gray-700 text-xs font-mono resize-none"></textarea>
+                        </div>
+
+                        <button id="btn-save-config" class="w-full p-3 bg-nexusBronze text-nexusDark font-bold font-tactical tracking-widest text-xs rounded shadow uppercase hover:bg-nexusBronze/90 transition-colors">
+                            APLICAR Y REINICIAR
+                        </button>
+                        <button id="btn-clear-config" class="w-full p-2 border border-nexusRed/55 text-nexusRed font-mono text-[10px] tracking-wider rounded uppercase hover:bg-nexusRed/10 transition-colors">
+                            Borrar Credenciales
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Simulation Tools -->
+                <div class="border-t border-nexusBronze/20 pt-6 space-y-4">
+                    <h4 class="text-sm font-bold text-gray-200">ACCIONES DE SIMULACIÓN</h4>
+                    <p class="text-xs text-gray-400">Herramientas para demostración táctica y simulacros.</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="btn-sim-offline" class="p-2.5 bg-nexusRed/20 hover:bg-nexusRed/30 border border-nexusRed/40 rounded text-nexusRed font-mono text-xs font-bold uppercase transition-colors">
+                            Simular Offline
+                        </button>
+                        <button id="btn-sim-online" class="p-2.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 rounded text-green-400 font-mono text-xs font-bold uppercase transition-colors">
+                            Simular Online
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Credits -->
+            <div class="border-t border-nexusBronze/20 pt-6 text-center">
+                <p class="text-[10px] font-mono text-gray-600">Nexus Security Chacao v1.0.0</p>
+                <p class="text-[9px] font-mono text-gray-600 mt-1">Desarrollado para Respuesta Inmediata Offline</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP SCRIPT -->
+    <script type="module">
+        // Global system mode and database reference
+        let db = null;
+        let isSimulationMode = true;
+        let activeFirebaseConfig = null;
+        let currentUser = null;
+        let forceOfflineMock = false;
+        let isAdmin = false;
+        let globalCenters = [];
+
+        // UI View Elements
+        const authView = document.getElementById('auth-view');
+        const dashView = document.getElementById('dashboard-view');
+        const adminView = document.getElementById('admin-view');
+        const settingsPanel = document.getElementById('settings-panel');
+        const adminSettingsContainer = document.getElementById('admin-settings-container');
+        const simulationBanner = document.getElementById('simulation-banner');
+        
+        // Admin UI Elements
+        const btnAdminTab = document.getElementById('btn-admin-tab');
+        const btnAdminExit = document.getElementById('btn-admin-exit');
+        const adminCodeInput = document.getElementById('admin-code-input');
+        const btnLoginAdmin = document.getElementById('btn-login-admin');
+        const acopioManagerForm = document.getElementById('acopio-manager-form');
+        const adminSosList = document.getElementById('admin-sos-list');
+        const adminDamageList = document.getElementById('admin-damage-list');
+        const adminAcopioList = document.getElementById('admin-acopio-list');
+        const metricSos = document.getElementById('metric-sos');
+        const metricDanio = document.getElementById('metric-danio');
+        const metricRegistros = document.getElementById('metric-registros');
+        const metricHabitantes = document.getElementById('metric-habitantes');
+        
+        // Form & Details Elements
+        const regForm = document.getElementById('reg-form');
+        const cedulaInput = document.getElementById('cedula');
+        const cedulaError = document.getElementById('cedula-error');
+        const userDisplayName = document.getElementById('user-display-name');
+        const userDisplayId = document.getElementById('user-display-id');
+        
+        // Controls
+        const btnSettings = document.getElementById('btn-settings');
+        const btnCloseSettings = document.getElementById('btn-close-settings');
+        const btnSaveConfig = document.getElementById('btn-save-config');
+        const btnClearConfig = document.getElementById('btn-clear-config');
+        const fbConfigJson = document.getElementById('fb-config-json');
+        const firebaseStatusBadge = document.getElementById('firebase-status-badge');
+        
+        const btnSimOffline = document.getElementById('btn-sim-offline');
+        const btnSimOnline = document.getElementById('btn-sim-online');
+        const btnResetUser = document.getElementById('btn-reset-user');
+        
+        const networkStatus = document.getElementById('network-status');
+        const networkText = document.getElementById('network-text');
+        const coordsText = document.getElementById('coords-text');
+
+        // Dynamic feed lists
+        const acopioFeed = document.getElementById('acopio-feed');
+        const queueList = document.getElementById('queue-list');
+        const queueCount = document.getElementById('queue-count');
+
+        // Slider logic
+        const damageSlider = document.getElementById('damage-slider');
+        const sliderValBadge = document.getElementById('slider-val-badge');
+        const damageDesc = document.getElementById('damage-desc');
+
+        // Queue array for fully manual simulated transmission
+        let mockQueue = JSON.parse(localStorage.getItem('nexus_mock_queue') || '[]');
+
+        // Initialize connection status
+        function updateNetworkStatus() {
+            const isOnline = navigator.onLine && !forceOfflineMock;
+            if (isOnline) {
+                networkStatus.style.backgroundColor = '#22c55e';
+                networkStatus.style.boxShadow = '0 0 12px #22c55e';
+                networkText.innerText = 'En Línea';
+                networkText.style.color = '#22c55e';
+                
+                // Trigger online sync for Simulation Mode queue
+                if (isSimulationMode) {
+                    processMockQueue();
+                }
+            } else {
+                networkStatus.style.backgroundColor = '#ef4444';
+                networkStatus.style.boxShadow = '0 0 12px #ef4444';
+                networkText.innerText = 'Sin Red';
+                networkText.style.color = '#ef4444';
+            }
+        }
+
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+        updateNetworkStatus();
+
+        // SIMULATION MODE WORKFLOW
+        // Mock Acopio Centers default data
+        const defaultAcopioCenters = [
+            { id: 1, name: "Plaza Bolívar Chacao", status: "ACTIVO", needs: "Agua embotellada, analgésicos, gasas", updated: "Hace 5 min" },
+            { id: 2, name: "C.C. San Ignacio (Sótano)", status: "ALERTA", needs: "Linternas, baterías, cobijas", updated: "Hace 15 min" },
+            { id: 3, name: "Parque Altamira", status: "PREPARACIÓN", needs: "Personal médico de apoyo", updated: "Hace 1 hora" }
+        ];
+
+        // Save & Load Mock Queue
+        function saveMockQueue() {
+            localStorage.setItem('nexus_mock_queue', JSON.stringify(mockQueue));
+            renderQueue();
+        }
+
+        function renderQueue() {
+            queueCount.innerText = `${mockQueue.length} en espera`;
+            if (mockQueue.length === 0) {
+                queueList.innerHTML = `<p class="text-center py-2 text-gray-600">No hay reportes pendientes.</p>`;
+                return;
+            }
+
+            queueList.innerHTML = mockQueue.map((item, idx) => {
+                let badge = `<span class="px-1.5 py-0.5 rounded text-[8px] bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 font-bold uppercase">OFFLINE</span>`;
+                if (item.synced) {
+                    badge = `<span class="px-1.5 py-0.5 rounded text-[8px] bg-green-500/10 text-green-400 border border-green-500/20 font-bold uppercase">ENVIADO</span>`;
+                }
+                
+                return `
+                    <div class="p-2 bg-nexusNavyLight/45 rounded border border-nexusBronze/20 flex justify-between items-center text-[10px]">
+                        <div>
+                            <span class="font-bold text-nexusBronze">[${item.type.toUpperCase()}]</span> 
+                            <span class="text-gray-400 ml-1">${new Date(item.timestamp).toLocaleTimeString()}</span>
+                            <div class="text-[9px] text-gray-400 truncate max-w-[200px] mt-0.5">${JSON.stringify(item.data)}</div>
+                        </div>
+                        <div>${badge}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Process Mock sync when connection returns
+        function processMockQueue() {
+            if (mockQueue.length === 0) return;
+            console.log('[Mock DB] Intentando sincronizar reportes locales en cola...');
+            
+            mockQueue.forEach((item, index) => {
+                if (!item.synced) {
+                    item.synced = true;
+                    console.log(`[Mock DB] Reporte sincronizado con éxito: [${item.type}]`, item.data);
+                }
+            });
+            
+            // Clear synced reports after a brief display delay
+            setTimeout(() => {
+                mockQueue = mockQueue.filter(item => !item.synced);
+                saveMockQueue();
+            }, 3000);
+            
+            saveMockQueue();
+        }
+
+        // Add to Mock queue
+        function queueMockReport(type, data) {
+            const queueItem = {
+                type,
+                data,
+                timestamp: new Date().toISOString(),
+                synced: navigator.onLine && !forceOfflineMock
+            };
+            
+            mockQueue.unshift(queueItem);
+            saveMockQueue();
+
+            if (queueItem.synced) {
+                // Flash success toast
+                alert(`[Enviado en Vivo] Reporte de ${type.toUpperCase()} registrado con éxito en red.`);
+                
+                // Instantly remove from queue if sent immediately in mock mode
+                setTimeout(() => {
+                    mockQueue = mockQueue.filter(item => item !== queueItem);
+                    saveMockQueue();
+                }, 1500);
+            } else {
+                alert(`[Offline] Sin conexión. Reporte de ${type.toUpperCase()} guardado localmente en IndexedDB. Se sincronizará automáticamente.`);
+            }
+        }
+
+        // Render Acopio Feed
+        function renderAcopioFeed(centers) {
+            acopioFeed.innerHTML = centers.map(center => {
+                let badgeColor = 'bg-green-500/10 text-green-400 border border-green-500/20';
+                if (center.status === 'ALERTA') badgeColor = 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20';
+                if (center.status === 'CRÍTICO') badgeColor = 'bg-nexusRed/10 text-nexusRed border border-nexusRed/20';
+
+                return `
+                    <div class="p-3 bg-nexusNavyLight/30 rounded border border-nexusBronze/10 hover:border-nexusBronze/30 transition-all duration-200 flex justify-between items-start space-x-3">
+                        <div class="space-y-1">
+                            <h4 class="font-bold text-sm text-gray-200 font-tactical">${center.name}</h4>
+                            <p class="text-xs text-nexusBronze font-medium">Requerimientos: <span class="text-gray-300 font-sans font-normal">${center.needs}</span></p>
+                            <span class="text-[9px] font-mono text-gray-500 block pt-1">Actualizado: ${center.updated}</span>
+                        </div>
+                        <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold tracking-widest ${badgeColor}">${center.status}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Initialize UI with mock data initially
+        renderAcopioFeed(defaultAcopioCenters);
+        renderQueue();
+
+        // SLIDER DYNAMIC UX COLORS
+        damageSlider.addEventListener('input', () => {
+            const val = parseInt(damageSlider.value);
+            let colorClass = 'text-green-400 bg-green-500/20 border-green-500/40';
+            let desc = '';
+            
+            if (val <= 3) {
+                colorClass = 'text-green-400 bg-green-500/20 border-green-500/40';
+                desc = 'Leve: Fisuras superficiales en pintura, mampostería intacta. Estructura segura.';
+                damageSlider.style.accentColor = '#22c55e';
+            } else if (val <= 6) {
+                colorClass = 'text-yellow-400 bg-yellow-500/20 border-yellow-500/40';
+                desc = 'Moderado: Desprendimiento de revoques, fisuras en paredes. Precaución, vigas estables.';
+                damageSlider.style.accentColor = '#eab308';
+            } else if (val <= 8) {
+                colorClass = 'text-orange-400 bg-orange-500/20 border-orange-500/40';
+                desc = 'Grave: Agrietamiento en vigas y columnas principales. Salir de la estructura de inmediato.';
+                damageSlider.style.accentColor = '#f97316';
+            } else {
+                colorClass = 'text-nexusRed bg-nexusRed/20 border-nexusRed/40 status-pulse-dot';
+                desc = 'Crítico / Colapso: Daño mayor estructural, asentamiento, columnas expuestas. ¡PELIGRO EXTREMO!';
+                damageSlider.style.accentColor = '#E63946';
+            }
+            
+            sliderValBadge.className = `font-mono text-sm font-bold border px-2 py-0.5 rounded ${colorClass}`;
+            sliderValBadge.innerText = `Nivel ${val}`;
+            damageDesc.innerText = desc;
+            damageDesc.className = `p-3 rounded text-xs font-mono border ${colorClass}`;
+        });
+
+        // VALIDACIÓN DE CÉDULA VENEZOLANA
+        cedulaInput.addEventListener('input', () => {
+            const val = cedulaInput.value.trim().toUpperCase();
+            // Regex match for V-12345678 or E-12345678 formats
+            const cedulaRegex = /^[VEve]-\d{5,9}$/;
+            if (val === "" || cedulaRegex.test(val)) {
+                cedulaError.classList.add('hidden');
+                cedulaInput.classList.remove('border-nexusRed');
+            } else {
+                cedulaError.classList.remove('hidden');
+                cedulaInput.classList.add('border-nexusRed');
+            }
+        });
+
+        // FIREBASE FIRELOAD MODULE
+        async function setupFirebase(config) {
+            try {
+                const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
+                const { 
+                    initializeFirestore, 
+                    collection, 
+                    addDoc, 
+                    onSnapshot, 
+                    query, 
+                    orderBy, 
+                    limit, 
+                    persistentLocalCache, 
+                    persistentMultipleTabManager 
+                } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+
+                // Initialize App
+                const app = initializeApp(config);
+                
+                // Initialize Firestore with robust multi-tab persistent cache
+                db = initializeFirestore(app, {
+                    localCache: persistentLocalCache({
+                        tabManager: persistentMultipleTabManager()
+                    })
+                });
+
+                isSimulationMode = false;
+                simulationBanner.classList.add('hidden');
+                firebaseStatusBadge.innerText = 'EN LÍNEA';
+                firebaseStatusBadge.className = 'text-[10px] font-mono uppercase bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-0.5 rounded';
+                console.log('[Firebase DB] Inicializado con éxito con persistencia IndexedDB habilitada.');
+
+                // Subscribe to Real Firestore Acopio Centers feed
+                const acopioQuery = query(collection(db, "centros_acopio"), orderBy("updatedAt", "desc"), limit(10));
+                
+                onSnapshot(acopioQuery, (snapshot) => {
+                    const centers = [];
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        centers.push({
+                            id: doc.id,
+                            name: data.nombre || "Centro Sin Nombre",
+                            status: data.estado || "ACTIVO",
+                            needs: data.necesidades || "Ninguna registrada",
+                            updated: data.updatedAt ? new Date(data.updatedAt.seconds * 1000).toLocaleTimeString() : 'Recién'
+                        });
+                    });
+
+                    globalCenters = centers;
+                    if (centers.length > 0) {
+                        renderAcopioFeed(centers);
+                        renderAdminAcopioList(centers);
+                    } else {
+                        // Seeding Firestore with default centers for visual feedback if collection empty
+                        seedDefaultAcopioCenters();
+                    }
+                }, (error) => {
+                    console.warn('[Firebase DB] Error cargando centros de acopio en vivo:', error.message);
+                    renderAcopioFeed(defaultAcopioCenters);
+                    renderAdminAcopioList(defaultAcopioCenters);
+                });
+
+                // Subscribe to Registrations (Metrics)
+                onSnapshot(collection(db, "registros_chacao"), (snapshot) => {
+                    let totalReg = 0;
+                    let totalHab = 0;
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        totalReg++;
+                        totalHab += parseInt(data.habitantes || 0);
+                    });
+                    metricRegistros.innerText = totalReg;
+                    metricHabitantes.innerText = totalHab;
+                });
+
+                // Subscribe to SOS Alerts
+                onSnapshot(collection(db, "alertas_sos"), (snapshot) => {
+                    const alerts = [];
+                    snapshot.forEach((doc) => {
+                        alerts.push({ id: doc.id, ...doc.data() });
+                    });
+                    renderAdminSos(alerts);
+                });
+
+                // Subscribe to Damage Reports
+                onSnapshot(collection(db, "reportes_danio"), (snapshot) => {
+                    const reports = [];
+                    snapshot.forEach((doc) => {
+                        reports.push({ id: doc.id, ...doc.data() });
+                    });
+                    renderAdminDamage(reports);
+                });
+
+                return true;
+            } catch (err) {
+                console.error('[Firebase Setup] Falló la inicialización real de Firebase, cayendo en Modo Simulación:', err);
+                isSimulationMode = true;
+                simulationBanner.classList.remove('hidden');
+                firebaseStatusBadge.innerText = 'FALLÓ / MOCK';
+                firebaseStatusBadge.className = 'text-[10px] font-mono uppercase bg-nexusRed/20 text-nexusRed border border-nexusRed/30 px-2 py-0.5 rounded';
+                return false;
+            }
+        }
+
+        // Seed default centers in FireStore for initial configuration convenience
+        async function seedDefaultAcopioCenters() {
+            if (!db || isSimulationMode) return;
+            try {
+                const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                const batchPromises = defaultAcopioCenters.map(center => {
+                    return addDoc(collection(db, "centros_acopio"), {
+                        nombre: center.name,
+                        estado: center.status,
+                        necesidades: center.needs,
+                        updatedAt: new Date()
+                    });
+                });
+                await Promise.all(batchPromises);
+                console.log('[Firebase DB] Centros de acopio sembrados en Firestore exitosamente.');
+            } catch (err) {
+                console.warn('[Firebase DB] Falló siembra de centros:', err);
+            }
+        }
+
+        // LOAD SECURED FIREBASE KEY FROM STORAGE OR FALLBACK
+        const defaultFirebaseConfig = {
+            apiKey: "AIzaSyDzHirGhp-PiasxD4xn3HUFmpQ90aNxsLI",
+            authDomain: "nexus-security-chacao-v1.firebaseapp.com",
+            projectId: "nexus-security-chacao-v1",
+            storageBucket: "nexus-security-chacao-v1.firebasestorage.app",
+            messagingSenderId: "478828977258",
+            appId: "1:478828977258:web:fa08617bb3df025da83e13",
+            measurementId: "G-G59QMC6EL2"
+        };
+
+        const storedConfig = localStorage.getItem('nexus_fb_config');
+        if (storedConfig) {
+            try {
+                activeFirebaseConfig = JSON.parse(storedConfig);
+                fbConfigJson.value = JSON.stringify(activeFirebaseConfig, null, 2);
+                setupFirebase(activeFirebaseConfig);
+            } catch (e) {
+                console.error('Configuración almacenada de Firebase corrupta:', e);
+                // Fallback to project default config
+                activeFirebaseConfig = defaultFirebaseConfig;
+                fbConfigJson.value = JSON.stringify(defaultFirebaseConfig, null, 2);
+                setupFirebase(defaultFirebaseConfig);
+            }
+        } else {
+            console.log('[Sistema] Iniciando con configuración de Firebase predeterminada.');
+            activeFirebaseConfig = defaultFirebaseConfig;
+            fbConfigJson.value = JSON.stringify(defaultFirebaseConfig, null, 2);
+            setupFirebase(defaultFirebaseConfig);
+        }
+
+        // SAVE & REBOOT FOR CONFIG PANEL
+        btnSaveConfig.addEventListener('click', () => {
+            const rawJson = fbConfigJson.value.trim();
+            if (!rawJson) {
+                alert("Introduce una configuración válida.");
+                return;
+            }
+
+            try {
+                const configParsed = JSON.parse(rawJson);
+                if (!configParsed.apiKey || !configParsed.projectId) {
+                    throw new Error("El JSON no parece contener una configuración válida de Firebase (falta apiKey o projectId).");
+                }
+                
+                localStorage.setItem('nexus_fb_config', JSON.stringify(configParsed));
+                alert("Configuración guardada. Reiniciando conexión...");
+                location.reload();
+            } catch (err) {
+                alert("Error al analizar JSON de Firebase: " + err.message);
+            }
+        });
+
+        // CLEAR CONFIG
+        btnClearConfig.addEventListener('click', () => {
+            if (confirm("¿Estás seguro de eliminar las credenciales de Firebase? La aplicación volverá al Modo Simulación.")) {
+                localStorage.removeItem('nexus_fb_config');
+                alert("Credenciales eliminadas. Reiniciando...");
+                location.reload();
+            }
+        });
+
+        // CONTROLS FOR MOCK SIMULATION PANEL
+        btnSimOffline.addEventListener('click', () => {
+            forceOfflineMock = true;
+            updateNetworkStatus();
+            alert("Dispositivo forzado a modo OFFLINE. La red se simula inactiva.");
+        });
+
+        btnSimOnline.addEventListener('click', () => {
+            forceOfflineMock = false;
+            updateNetworkStatus();
+            alert("Dispositivo reconectado a red virtual.");
+        });
+
+        // LOGOUT/USER RESET
+        btnResetUser.addEventListener('click', () => {
+            if (confirm("¿Deseas borrar la sesión de usuario activa? Volverás a la pantalla de registro.")) {
+                localStorage.removeItem('nexus_user');
+                currentUser = null;
+                authView.classList.remove('hidden');
+                dashView.classList.add('hidden');
+                settingsPanel.classList.add('translate-x-full');
+            }
+        });
+
+        // REGISTRATION ACTION
+        regForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const nombre = document.getElementById('nombre').value.trim();
+            const cedula = document.getElementById('cedula').value.trim().toUpperCase();
+            const edificio = document.getElementById('edificio').value;
+            const habitantes = parseInt(document.getElementById('habitantes').value);
+
+            // Double check validation
+            const cedulaRegex = /^[VEve]-\d{5,9}$/;
+            if (!cedulaRegex.test(cedula)) {
+                cedulaError.classList.remove('hidden');
+                return;
+            }
+
+            const userData = {
+                nombre,
+                cedula,
+                edificio,
+                habitantes,
+                timestamp: new Date().toISOString()
+            };
+
+            // Save session locally
+            localStorage.setItem('nexus_user', JSON.stringify(userData));
+            currentUser = userData;
+            
+            // Render user details to dashboard
+            userDisplayName.innerText = userData.nombre;
+            userDisplayId.innerText = userData.cedula;
+
+            // Submit to Database (or mock queue)
+            if (!isSimulationMode && db) {
+                try {
+                    const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                    await addDoc(collection(db, "registros_chacao"), userData);
+                    console.log('[Firebase DB] Registro enviado en vivo.');
+                } catch (err) {
+                    console.warn('[Firebase DB Offline-Enqueued] Error en registro de red, guardado en cache de Firestore:', err.message);
+                }
+            } else {
+                let regs = JSON.parse(localStorage.getItem('nexus_mock_registros') || '[]');
+                regs.push(userData);
+                localStorage.setItem('nexus_mock_registros', JSON.stringify(regs));
+                queueMockReport('registro', userData);
+            }
+
+            // Transition views
+            authView.classList.add('hidden');
+            dashView.classList.remove('hidden');
+        });
+
+        // AUTO-LOGIN IF SESSION ACTIVE
+        const savedSession = localStorage.getItem('nexus_user');
+        if (savedSession) {
+            try {
+                currentUser = JSON.parse(savedSession);
+                userDisplayName.innerText = currentUser.nombre;
+                userDisplayId.innerText = currentUser.cedula;
+                authView.classList.add('hidden');
+                dashView.classList.remove('hidden');
+            } catch (e) {
+                console.error("Error cargando sesión activa:", e);
+                localStorage.removeItem('nexus_user');
+            }
+        }
+
+        // TRIGGER EMERGENCY SOS BUTTON
+        const btnSos = document.getElementById('btn-sos');
+        btnSos.addEventListener('click', () => {
+            if (!currentUser) return alert("Registra tu usuario primero.");
+
+            // Request GPS coordinates
+            if (navigator.geolocation) {
+                coordsText.innerText = 'GPS: SOLICITANDO...';
+                
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    coordsText.innerText = `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                    
+                    const sosData = {
+                        cedula: currentUser.cedula,
+                        nombre: currentUser.nombre,
+                        edificio: currentUser.edificio,
+                        habitantes: currentUser.habitantes,
+                        lat,
+                        lng,
+                        timestamp: new Date().toISOString()
+                    };
+
+                    if (!isSimulationMode && db) {
+                        try {
+                            const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                            await addDoc(collection(db, "alertas_sos"), sosData);
+                            alert("SOS Emitido y geolocalizado en red Firestore.");
+                        } catch (err) {
+                            console.warn('[Firebase DB Offline-Enqueued] SOS encolado en cache local:', err.message);
+                            alert("SOS Guardado en el cache de Firestore. Se enviará apenas se detecte red.");
+                        }
+                    } else {
+                        let sosList = JSON.parse(localStorage.getItem('nexus_mock_sos') || '[]');
+                        sosList.push({ id: Date.now().toString(), ...sosData });
+                        localStorage.setItem('nexus_mock_sos', JSON.stringify(sosList));
+                        queueMockReport('sos', sosData);
+                    }
+
+                }, (error) => {
+                    console.error("Error de Geolocalización:", error);
+                    coordsText.innerText = 'GPS: FALLIDO / SIN PERMISO';
+                    
+                    // Fallback to sending SOS without geolocation
+                    const sosDataNoGeo = {
+                        cedula: currentUser.cedula,
+                        nombre: currentUser.nombre,
+                        edificio: currentUser.edificio,
+                        habitantes: currentUser.habitantes,
+                        lat: null,
+                        lng: null,
+                        timestamp: new Date().toISOString()
+                    };
+
+                    if (!isSimulationMode && db) {
+                        import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js").then(({ collection, addDoc }) => {
+                            addDoc(collection(db, "alertas_sos"), sosDataNoGeo);
+                            alert("SOS Emitido (Sin GPS por restricción o error) y guardado en Firestore.");
+                        });
+                    } else {
+                        let sosList = JSON.parse(localStorage.getItem('nexus_mock_sos') || '[]');
+                        sosList.push({ id: Date.now().toString(), ...sosDataNoGeo });
+                        localStorage.setItem('nexus_mock_sos', JSON.stringify(sosList));
+                        queueMockReport('sos', sosDataNoGeo);
+                    }
+                }, {
+                    enableHighAccuracy: true,
+                    timeout: 8000,
+                    maximumAge: 0
+                });
+            } else {
+                alert("Geolocalización no soportada por este navegador.");
+            }
+        });
+
+        // TRANSMIT STRUCTURAL DAMAGE REPORT
+        const btnReport = document.getElementById('btn-report');
+        btnReport.addEventListener('click', async () => {
+            if (!currentUser) return alert("Registra tu usuario primero.");
+
+            const nivel = parseInt(damageSlider.value);
+            const comentarios = document.getElementById('damage-comment').value.trim();
+
+            const damageData = {
+                cedula: currentUser.cedula,
+                edificio: currentUser.edificio,
+                nivel_danio: nivel,
+                comentarios,
+                timestamp: new Date().toISOString()
+            };
+
+            if (!isSimulationMode && db) {
+                try {
+                    const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                    await addDoc(collection(db, "reportes_danio"), damageData);
+                    alert("Reporte de daños enviado con éxito.");
+                    document.getElementById('damage-comment').value = '';
+                } catch (err) {
+                    console.warn('[Firebase DB Offline-Enqueued] Reporte encolado:', err.message);
+                    alert("Reporte guardado en caché local. Se sincronizará automáticamente.");
+                    document.getElementById('damage-comment').value = '';
+                }
+            } else {
+                let damageList = JSON.parse(localStorage.getItem('nexus_mock_damage') || '[]');
+                damageList.push({ id: Date.now().toString(), ...damageData });
+                localStorage.setItem('nexus_mock_damage', JSON.stringify(damageList));
+                queueMockReport('daño', damageData);
+                document.getElementById('damage-comment').value = '';
+            }
+        });
+
+        // TOGGLE SETTINGS PANEL
+        btnSettings.addEventListener('click', () => {
+            settingsPanel.classList.remove('translate-x-full');
+        });
+
+        btnCloseSettings.addEventListener('click', () => {
+            settingsPanel.classList.add('translate-x-full');
+        });
+
+        // ==========================================
+        // CENTRO DE CONTROL TÁCTICO (ADMIN LOGIC)
+        // ==========================================
+
+        // Render SOS alerts in admin dashboard
+        function renderAdminSos(alerts) {
+            metricSos.innerText = alerts.length;
+            if (alerts.length === 0) {
+                adminSosList.innerHTML = `<p class="text-center py-4 text-xs font-mono text-gray-500">No hay alertas SOS registradas.</p>`;
+                return;
+            }
+            adminSosList.innerHTML = alerts.map(alert => {
+                const mapLink = alert.lat ? `<a href="https://maps.google.com/?q=${alert.lat},${alert.lng}" target="_blank" class="text-blue-400 underline hover:text-blue-300">GPS: ${alert.lat.toFixed(4)}, ${alert.lng.toFixed(4)}</a>` : 'Sin GPS';
+                return `
+                    <div class="p-3 bg-nexusNavyLight/55 rounded border border-nexusRed/30 flex justify-between items-center text-xs">
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="font-bold text-nexusRed font-tactical">[SOS EN CURSO]</span>
+                                <span class="font-mono text-gray-400">${alert.cedula}</span>
+                            </div>
+                            <p class="text-gray-200">Afectado: <span class="font-bold">${alert.nombre || 'Desconocido'}</span> (${alert.edificio || 'Sin ubicación'})</p>
+                            <div class="flex items-center space-x-4 text-[10px] font-mono text-gray-500">
+                                <span>Acompañantes: ${alert.habitantes || 0}</span>
+                                <span>${mapLink}</span>
+                                <span>${new Date(alert.timestamp).toLocaleTimeString()}</span>
+                            </div>
+                        </div>
+                        <button onclick="resolveSos('${alert.id}')" class="px-2.5 py-1.5 bg-nexusRed/20 hover:bg-nexusRed text-nexusRed hover:text-white rounded border border-nexusRed/55 font-bold font-mono text-[10px] uppercase transition-colors">
+                            Atender
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render damage reports in admin dashboard
+        function renderAdminDamage(reports) {
+            metricDanio.innerText = reports.length;
+            reports.sort((a, b) => b.nivel_danio - a.nivel_danio);
+            
+            if (reports.length === 0) {
+                adminDamageList.innerHTML = `<p class="text-center py-4 text-xs font-mono text-gray-500">No hay reportes de daño estructural.</p>`;
+                return;
+            }
+            adminDamageList.innerHTML = reports.map(report => {
+                let colorClass = 'text-green-400 bg-green-500/10 border-green-500/30';
+                if (report.nivel_danio > 3) colorClass = 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30';
+                if (report.nivel_danio > 6) colorClass = 'text-orange-400 bg-orange-500/10 border-orange-500/30';
+                if (report.nivel_danio > 8) colorClass = 'text-nexusRed bg-nexusRed/10 border-nexusRed/30 status-pulse-dot';
+
+                return `
+                    <div class="p-3 bg-nexusNavyLight/30 rounded border border-nexusBronze/10 flex justify-between items-start text-xs">
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="font-bold text-gray-300 font-tactical">${report.edificio}</span>
+                                <span class="font-mono text-gray-500">C.I: ${report.cedula}</span>
+                            </div>
+                            <p class="text-gray-400 italic">Observaciones: "${report.comentarios || 'Sin comentarios'}"</p>
+                            <span class="text-[9px] font-mono text-gray-500 block">Reportado: ${new Date(report.timestamp).toLocaleString()}</span>
+                        </div>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-widest ${colorClass}">
+                            Nivel ${report.nivel_danio}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render acopio centers in admin list
+        function renderAdminAcopioList(centers) {
+            if (centers.length === 0) {
+                adminAcopioList.innerHTML = `<p class="text-center py-2 text-xs font-mono text-gray-600">No hay centros guardados.</p>`;
+                return;
+            }
+            adminAcopioList.innerHTML = centers.map(center => {
+                let badgeColor = 'bg-green-500/10 text-green-400 border border-green-500/20';
+                if (center.status === 'ALERTA' || center.estado === 'ALERTA') badgeColor = 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20';
+                if (center.status === 'CRÍTICO' || center.estado === 'CRÍTICO') badgeColor = 'bg-nexusRed/10 text-nexusRed border border-nexusRed/20';
+
+                const name = center.nombre || center.name || "Centro Sin Nombre";
+                const status = center.estado || center.status || "ACTIVO";
+
+                return `
+                    <div class="p-2.5 bg-nexusNavyLight/20 rounded border border-nexusBronze/10 flex justify-between items-center text-xs">
+                        <div class="space-y-0.5 truncate max-w-[200px]">
+                            <h5 class="font-bold text-gray-200 truncate">${name}</h5>
+                            <span class="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold uppercase tracking-wider ${badgeColor}">${status}</span>
+                        </div>
+                        <div class="flex space-x-1">
+                            <button onclick="editAcopio('${center.id}')" class="p-1 text-nexusBronze hover:text-white" title="Editar">
+                                <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"></path>
+                                </svg>
+                            </button>
+                            <button onclick="deleteAcopio('${center.id}')" class="p-1 text-nexusRed hover:text-red-400" title="Eliminar">
+                                <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update local arrays and render for Simulation Mode
+        function updateAdminSimulationData() {
+            if (!isSimulationMode) return;
+            const mockRegistros = JSON.parse(localStorage.getItem('nexus_mock_registros') || '[]');
+            const mockSos = JSON.parse(localStorage.getItem('nexus_mock_sos') || '[]');
+            const mockDamage = JSON.parse(localStorage.getItem('nexus_mock_damage') || '[]');
+            const mockAcopio = JSON.parse(localStorage.getItem('nexus_mock_acopio') || JSON.stringify(defaultAcopioCenters));
+            
+            let totalReg = mockRegistros.length;
+            let totalHab = 0;
+            mockRegistros.forEach(r => totalHab += (parseInt(r.habitantes) || 0));
+
+            if (currentUser) {
+                totalReg++;
+                totalHab += (parseInt(currentUser.habitantes) || 0);
+            }
+
+            metricRegistros.innerText = totalReg;
+            metricHabitantes.innerText = totalHab;
+
+            renderAdminSos(mockSos);
+            renderAdminDamage(mockDamage);
+            renderAdminAcopioList(mockAcopio);
+        }
+
+        // Resolving / Archiving SOS Alert
+        window.resolveSos = async function(id) {
+            if (!confirm("¿Deseas archivar esta alerta SOS? Se eliminará del centro de control.")) return;
+            if (!isSimulationMode && db) {
+                try {
+                    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                    await deleteDoc(doc(db, "alertas_sos", id));
+                } catch (e) {
+                    alert("Error: " + e.message);
+                }
+            } else {
+                let mockSos = JSON.parse(localStorage.getItem('nexus_mock_sos') || '[]');
+                mockSos = mockSos.filter(alert => alert.id !== id);
+                localStorage.setItem('nexus_mock_sos', JSON.stringify(mockSos));
+                updateAdminSimulationData();
+            }
+        };
+
+        // Editing Acopio Centers
+        let editingCenterId = null;
+        window.editAcopio = function(id) {
+            let center = null;
+            if (isSimulationMode) {
+                const centers = JSON.parse(localStorage.getItem('nexus_mock_acopio') || JSON.stringify(defaultAcopioCenters));
+                center = centers.find(c => c.id.toString() === id.toString());
+            } else {
+                center = globalCenters.find(c => c.id === id);
+            }
+            
+            if (center) {
+                document.getElementById('acopio-name').value = center.nombre || center.name || "";
+                document.getElementById('acopio-needs').value = center.necesidades || center.needs || "";
+                document.getElementById('acopio-status').value = center.estado || center.status || "ACTIVO";
+                editingCenterId = id;
+                document.getElementById('btn-save-acopio').innerText = "ACTUALIZAR CENTRO";
+            }
+        };
+
+        // Deleting Acopio Centers
+        window.deleteAcopio = async function(id) {
+            if (!confirm("¿Deseas eliminar este centro de acopio?")) return;
+            if (!isSimulationMode && db) {
+                try {
+                    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                    await deleteDoc(doc(db, "centros_acopio", id));
+                } catch (e) {
+                    alert("Error: " + e.message);
+                }
+            } else {
+                let centers = JSON.parse(localStorage.getItem('nexus_mock_acopio') || JSON.stringify(defaultAcopioCenters));
+                centers = centers.filter(c => c.id.toString() !== id.toString());
+                localStorage.setItem('nexus_mock_acopio', JSON.stringify(centers));
+                updateAdminSimulationData();
+                renderAcopioFeed(centers);
+            }
+        };
+
+        // Admin Acopio Form Submission
+        const acopioName = document.getElementById('acopio-name');
+        const acopioNeeds = document.getElementById('acopio-needs');
+        const acopioStatus = document.getElementById('acopio-status');
+
+        acopioManagerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nombre = acopioName.value.trim();
+            const necesidades = acopioNeeds.value.trim();
+            const estado = acopioStatus.value;
+
+            if (!isSimulationMode && db) {
+                try {
+                    const { collection, addDoc, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                    if (editingCenterId) {
+                        await setDoc(doc(db, "centros_acopio", editingCenterId), {
+                            nombre,
+                            necesidades,
+                            estado,
+                            updatedAt: new Date()
+                        });
+                        editingCenterId = null;
+                        document.getElementById('btn-save-acopio').innerText = "GUARDAR CENTRO";
+                    } else {
+                        await addDoc(collection(db, "centros_acopio"), {
+                            nombre,
+                            necesidades,
+                            estado,
+                            updatedAt: new Date()
+                        });
+                    }
+                    acopioManagerForm.reset();
+                } catch (err) {
+                    alert("Error: " + err.message);
+                }
+            } else {
+                let centers = JSON.parse(localStorage.getItem('nexus_mock_acopio') || JSON.stringify(defaultAcopioCenters));
+                if (editingCenterId) {
+                    centers = centers.map(c => {
+                        if (c.id.toString() === editingCenterId.toString()) {
+                            return { ...c, name: nombre, needs: necesidades, status: estado, updated: "Recién" };
+                        }
+                        return c;
+                    });
+                    editingCenterId = null;
+                    document.getElementById('btn-save-acopio').innerText = "GUARDAR CENTRO";
+                } else {
+                    centers.unshift({
+                        id: Date.now(),
+                        name: nombre,
+                        needs: necesidades,
+                        status: estado,
+                        updated: "Recién"
+                    });
+                }
+                localStorage.setItem('nexus_mock_acopio', JSON.stringify(centers));
+                acopioManagerForm.reset();
+                updateAdminSimulationData();
+                renderAcopioFeed(centers);
+            }
+        });
+
+        // Admin Access Code Validation
+        btnLoginAdmin.addEventListener('click', () => {
+            const code = adminCodeInput.value.trim();
+            if (code === 'CHACAO911') {
+                isAdmin = true;
+                btnAdminTab.classList.remove('hidden');
+                adminSettingsContainer.classList.remove('hidden');
+                alert("Acceso de Comando Concedido. Se han desbloqueado el panel de control y las configuraciones avanzadas.");
+                settingsPanel.classList.add('translate-x-full');
+                adminCodeInput.value = '';
+                
+                if (isSimulationMode) {
+                    updateAdminSimulationData();
+                }
+            } else {
+                alert("Código de acceso táctico incorrecto.");
+            }
+        });
+
+        // Tab View Transitions
+        btnAdminTab.addEventListener('click', () => {
+            dashView.classList.add('hidden');
+            authView.classList.add('hidden');
+            adminView.classList.remove('hidden');
+        });
+
+        btnAdminExit.addEventListener('click', () => {
+            adminView.classList.add('hidden');
+            if (currentUser) {
+                dashView.classList.remove('hidden');
+            } else {
+                authView.classList.remove('hidden');
+            }
+        });
+
+        // REGISTER SERVICE WORKER FOR PWA SUPPORT WITH UPDATE DETECTION
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        console.log('[Service Worker] Registrado con éxito en el ámbito:', registration.scope);
+                        
+                        // Check for updates to the service worker code
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                // If a new worker is installed and there's already an active worker controlling the page
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    console.log('[Service Worker] Nueva versión táctica detectada.');
+                                    if (confirm("Hay una actualización crítica del sistema disponible. ¿Deseas recargar la aplicación para aplicarla de inmediato?")) {
+                                        location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch(err => {
+                        console.error('[Service Worker] Registro fallido:', err);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
