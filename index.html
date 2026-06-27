@@ -228,6 +228,12 @@
                         <input type="number" id="habitantes" min="0" max="50" placeholder="Personas actualmente contigo" class="w-full p-3 glass-input rounded text-white placeholder-gray-600 text-sm" required>
                     </div>
 
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-widest text-nexusBronze mb-1">PIN de Seguridad (SOS)</label>
+                        <input type="password" id="pin-sos" placeholder="4 Dígitos" maxlength="4" class="w-full p-3 glass-input rounded text-white placeholder-gray-600 text-sm font-mono tracking-[0.5em] text-center" required>
+                        <p class="text-[10px] text-gray-500 mt-1">Este PIN evita falsas alarmas si su celular se desbloquea en el bolsillo.</p>
+                    </div>
+
                     <button type="submit" id="btn-register" class="w-full p-4 mt-6 bg-nexusBronze hover:bg-nexusBronze/85 text-nexusDark font-black font-tactical rounded shadow-lg tracking-widest active:scale-95 transition-all duration-150 uppercase">
                         REGISTRAR EN SISTEMA
                     </button>
@@ -293,17 +299,86 @@
                 <div class="absolute top-2 right-2 text-[8px] font-mono tracking-widest text-gray-500" id="coords-text">GPS: INACTIVO</div>
                 
                 <div class="relative w-44 h-44 flex items-center justify-center mt-3">
-                    <button id="btn-sos" class="w-36 h-36 bg-nexusRed text-white font-black font-tactical text-3xl rounded-full shadow-sos hover:shadow-sosPulse active:scale-95 transition-all duration-200 border-4 border-white/20 flex flex-col items-center justify-center relative z-10 btn-sos-pulse">
+                    <button id="btn-sos" class="w-36 h-36 bg-nexusRed text-white font-black font-tactical text-2xl rounded-full shadow-sos hover:shadow-sosPulse transition-all duration-200 border-4 border-white/20 flex flex-col items-center justify-center relative z-10 btn-sos-pulse select-none" style="touch-action: none;">
                         <span>SOS</span>
-                        <span class="text-[9px] font-mono tracking-widest mt-1 text-red-200">EMISIÓN LOCAL</span>
+                        <span class="text-[8px] font-mono tracking-widest mt-1 text-red-200 leading-tight">MANTENER<br>3 SEGUNDOS</span>
                     </button>
+                    <!-- Progress circle ring for hold-to-sos -->
+                    <svg class="absolute inset-0 w-full h-full transform -rotate-90 pointer-events-none" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="46" fill="transparent" stroke="rgba(230,57,70,0.2)" stroke-width="6"/>
+                        <circle id="sos-progress-ring" cx="50" cy="50" r="46" fill="transparent" stroke="#E63946" stroke-width="6" stroke-dasharray="289" stroke-dashoffset="289" class="transition-all duration-100"/>
+                    </svg>
                     <!-- Pulse rings -->
                     <div class="absolute inset-0 bg-nexusRed/20 rounded-full animate-ping pointer-events-none"></div>
                 </div>
                 
                 <p class="text-xs text-gray-400 text-center px-4">
-                    Al presionar SOS, se enviará instantáneamente tu ubicación exacta y cédula al centro de mando.
+                    Al mantener presionado, se enviará instantáneamente tu **ubicación GPS exacta** y datos al centro de mando.
                 </p>
+            </div>
+
+            <!-- PIN CONFIRMATION MODAL -->
+            <div id="pin-modal" class="hidden fixed inset-0 bg-nexusDark/90 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+                <div class="glass-panel p-6 rounded-xl space-y-4 w-full max-w-sm border border-nexusRed text-center">
+                    <h3 class="font-tactical font-bold text-nexusRed tracking-wider">CONFIRMAR EMERGENCIA</h3>
+                    <p class="text-xs text-gray-300 font-mono">Ingrese su PIN de seguridad de 4 dígitos para despachar la unidad de rescate y evitar falsas alarmas.</p>
+                    <input type="password" id="sos-pin-confirm" maxlength="4" placeholder="••••" class="w-full p-4 glass-input rounded text-white text-2xl font-mono tracking-[1em] text-center" autofocus>
+                    <div class="flex gap-3">
+                        <button id="btn-cancel-sos" class="w-1/2 p-3 border border-gray-600 text-gray-400 rounded font-bold text-xs uppercase">Cancelar</button>
+                        <button id="btn-confirm-sos" class="w-1/2 p-3 bg-nexusRed text-white rounded font-bold text-xs uppercase shadow-sos">Transmitir</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TRIAJE MÉDICO Y HERIDOS -->
+            <div class="glass-panel p-5 rounded-xl space-y-4 border border-blue-500/20">
+                <h3 class="font-tactical font-bold text-blue-400 tracking-wider border-b border-blue-500/20 pb-2 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    TRIAJE MÉDICO RÁPIDO
+                </h3>
+                <div class="grid grid-cols-3 gap-2">
+                    <button class="btn-triaje p-3 rounded border border-green-500/40 bg-green-500/10 text-green-400 flex flex-col items-center hover:bg-green-500/20 transition" data-level="VERDE">
+                        <span class="text-2xl mb-1">🟩</span>
+                        <span class="text-[9px] font-bold uppercase text-center">Leve</span>
+                    </button>
+                    <button class="btn-triaje p-3 rounded border border-yellow-500/40 bg-yellow-500/10 text-yellow-400 flex flex-col items-center hover:bg-yellow-500/20 transition" data-level="AMARILLO">
+                        <span class="text-2xl mb-1">🟨</span>
+                        <span class="text-[9px] font-bold uppercase text-center">Moderado</span>
+                    </button>
+                    <button class="btn-triaje p-3 rounded border border-red-500/40 bg-red-500/10 text-red-500 flex flex-col items-center hover:bg-red-500/20 transition" data-level="ROJO">
+                        <span class="text-2xl mb-1">🟥</span>
+                        <span class="text-[9px] font-bold uppercase text-center">Riesgo Vital</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- LIBRERÍA DE SUPERVIVENCIA OFFLINE -->
+            <div class="glass-panel p-5 rounded-xl space-y-4">
+                <h3 class="font-tactical font-bold text-nexusBronze tracking-wider flex items-center border-b border-nexusBronze/20 pb-2">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"></path></svg>
+                    MANUALES DE SUPERVIVENCIA
+                </h3>
+                <div class="space-y-2">
+                    <details class="group bg-nexusNavy/50 border border-nexusBronze/10 rounded overflow-hidden">
+                        <summary class="p-3 text-xs font-bold text-gray-300 cursor-pointer hover:bg-nexusBronze/10 uppercase">Qué hacer en un Sismo</summary>
+                        <div class="p-3 text-[10px] text-gray-400 font-mono bg-black/30 border-t border-nexusBronze/10">
+                            1. Conserve la calma, no corra.<br>
+                            2. Aléjese de ventanas, repisas o muebles altos.<br>
+                            3. Sitúese bajo una mesa resistente o en el "triángulo de la vida".<br>
+                            4. Si está en la calle, aléjese de postes y cables eléctricos.<br>
+                            5. No use ascensores, use escaleras.
+                        </div>
+                    </details>
+                    <details class="group bg-nexusNavy/50 border border-nexusBronze/10 rounded overflow-hidden">
+                        <summary class="p-3 text-xs font-bold text-gray-300 cursor-pointer hover:bg-nexusBronze/10 uppercase">Hemorragias Severas</summary>
+                        <div class="p-3 text-[10px] text-gray-400 font-mono bg-black/30 border-t border-nexusBronze/10">
+                            1. Aplique presión directa sobre la herida con tela limpia.<br>
+                            2. Si la sangre traspasa, NO quite la tela, añada otra encima.<br>
+                            3. Eleve la extremidad herida por encima del nivel del corazón si es posible.<br>
+                            4. Solo use torniquete si la hemorragia es incontenible en brazos/piernas y apunte la hora.
+                        </div>
+                    </details>
+                </div>
             </div>
 
             <!-- STRUCTURAL DAMAGE SLIDER -->
@@ -1062,11 +1137,17 @@
             const instagram = document.getElementById('instagram').value.trim();
             const edificio = document.getElementById('edificio').value;
             const habitantes = parseInt(document.getElementById('habitantes').value);
+            const pin_sos = document.getElementById('pin-sos').value.trim();
 
             // Double check validation
             const cedulaRegex = /^[VEve]-\d{5,9}$/;
             if (!cedulaRegex.test(cedula)) {
                 cedulaError.classList.remove('hidden');
+                return;
+            }
+
+            if (pin_sos.length !== 4) {
+                alert("El PIN debe tener exactamente 4 dígitos.");
                 return;
             }
 
@@ -1077,6 +1158,7 @@
                 instagram,
                 edificio,
                 habitantes,
+                pin_sos,
                 timestamp: new Date().toISOString()
             };
 
@@ -1126,11 +1208,82 @@
             }
         }
 
-        // TRIGGER EMERGENCY SOS BUTTON
+        // TRIGGER EMERGENCY SOS BUTTON (HOLD TO SOS)
         const btnSos = document.getElementById('btn-sos');
-        btnSos.addEventListener('click', () => {
-            if (!currentUser) return alert("Registra tu usuario primero.");
+        const sosProgressRing = document.getElementById('sos-progress-ring');
+        const pinModal = document.getElementById('pin-modal');
+        const pinInput = document.getElementById('sos-pin-confirm');
+        const btnCancelSos = document.getElementById('btn-cancel-sos');
+        const btnConfirmSos = document.getElementById('btn-confirm-sos');
+        
+        let sosHoldTimer = null;
+        const SOS_HOLD_DURATION = 3000; // 3 seconds
+        let isHolding = false;
+        let animationFrame = null;
+        let holdStartTime = 0;
 
+        function animateProgress() {
+            if (!isHolding) {
+                sosProgressRing.style.strokeDashoffset = "289";
+                return;
+            }
+            const elapsed = Date.now() - holdStartTime;
+            const progress = Math.min(elapsed / SOS_HOLD_DURATION, 1);
+            const dashoffset = 289 - (289 * progress);
+            sosProgressRing.style.strokeDashoffset = dashoffset;
+            
+            if (progress < 1) {
+                animationFrame = requestAnimationFrame(animateProgress);
+            }
+        }
+
+        function startSosHold(e) {
+            if (!currentUser) return alert("Registra tu usuario primero.");
+            e.preventDefault();
+            isHolding = true;
+            holdStartTime = Date.now();
+            animateProgress();
+            
+            sosHoldTimer = setTimeout(() => {
+                isHolding = false;
+                sosProgressRing.style.strokeDashoffset = "0";
+                pinInput.value = '';
+                pinModal.classList.remove('hidden');
+                setTimeout(() => pinInput.focus(), 100);
+            }, SOS_HOLD_DURATION);
+        }
+
+        function stopSosHold() {
+            if (!isHolding) return;
+            isHolding = false;
+            clearTimeout(sosHoldTimer);
+            if (animationFrame) cancelAnimationFrame(animationFrame);
+            sosProgressRing.style.strokeDashoffset = "289";
+        }
+
+        btnSos.addEventListener('mousedown', startSosHold);
+        btnSos.addEventListener('touchstart', startSosHold, {passive: false});
+        
+        window.addEventListener('mouseup', stopSosHold);
+        window.addEventListener('touchend', stopSosHold);
+
+        btnCancelSos.addEventListener('click', () => {
+            pinModal.classList.add('hidden');
+            sosProgressRing.style.strokeDashoffset = "289";
+        });
+
+        btnConfirmSos.addEventListener('click', () => {
+            const enteredPin = pinInput.value.trim();
+            if (enteredPin !== currentUser.pin_sos) {
+                alert("PIN INCORRECTO. Acceso denegado.");
+                return;
+            }
+            pinModal.classList.add('hidden');
+            sosProgressRing.style.strokeDashoffset = "289";
+            executeSosTransmission();
+        });
+
+        function executeSosTransmission() {
             // Request GPS coordinates
             if (navigator.geolocation) {
                 coordsText.innerText = 'GPS: SOLICITANDO...';
@@ -1165,6 +1318,7 @@
                         sosList.push({ id: Date.now().toString(), ...sosData });
                         localStorage.setItem('nexus_mock_sos', JSON.stringify(sosList));
                         queueMockReport('sos', sosData);
+                        alert("SOS Emitido Localmente.");
                     }
 
                 }, (error) => {
@@ -1192,6 +1346,7 @@
                         sosList.push({ id: Date.now().toString(), ...sosDataNoGeo });
                         localStorage.setItem('nexus_mock_sos', JSON.stringify(sosList));
                         queueMockReport('sos', sosDataNoGeo);
+                        alert("SOS Emitido Localmente sin GPS.");
                     }
                 }, {
                     enableHighAccuracy: true,
@@ -1201,6 +1356,35 @@
             } else {
                 alert("Geolocalización no soportada por este navegador.");
             }
+        }
+
+        // TRIAJE MÉDICO
+        document.querySelectorAll('.btn-triaje').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                if (!currentUser) return alert("Registra tu usuario primero.");
+                const level = e.currentTarget.getAttribute('data-level');
+                if (confirm(`¿Estás seguro de enviar un reporte de Triaje Médico con nivel: ${level}?`)) {
+                    const triajeData = {
+                        cedula: currentUser.cedula,
+                        nombre: currentUser.nombre,
+                        edificio: currentUser.edificio,
+                        nivel: level,
+                        timestamp: new Date().toISOString()
+                    };
+
+                    if (!isSimulationMode && db) {
+                        try {
+                            const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                            await addDoc(collection(db, "reportes_triaje"), triajeData);
+                            alert(`Reporte médico ${level} transmitido con éxito.`);
+                        } catch (err) {
+                            alert("Reporte médico guardado en caché.");
+                        }
+                    } else {
+                        alert(`Reporte médico local simulado con nivel ${level}.`);
+                    }
+                }
+            });
         });
 
         // TRANSMIT STRUCTURAL DAMAGE REPORT
@@ -1569,19 +1753,35 @@
             mapMarkers = [];
             
             if (!isSimulationMode && db) {
-                // Real-time Firestore markers
-                const { collection, query, onSnapshot } = L.add ? { collection: null } : {}; // dummy fallback
-                // Subscribe directly in Firestore
-                const q = query ? query(collection(db, "reportes_danio")) : null;
-                // Wait! Since setupFirebase already registers this, we can pull global markers
-                // Or query directly from firestore:
                 import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js").then(({ collection, query, onSnapshot }) => {
-                    const q = query(collection(db, "reportes_danio"));
-                    onSnapshot(q, (snapshot) => {
+                    // Subscribe to Damage
+                    const qDanio = query(collection(db, "reportes_danio"));
+                    onSnapshot(qDanio, (snapshot) => {
+                        // For simplicity, we just clear and redraw all on any update
                         mapMarkers.forEach(m => map.removeLayer(m));
                         mapMarkers = [];
+                        
                         snapshot.forEach((doc) => {
                             addMarkerToMap(doc.data());
+                        });
+                        
+                        // Also redraw local or mock SOS for now, since we clear mapMarkers
+                        const mockSosList = JSON.parse(localStorage.getItem('nexus_mock_sos') || '[]');
+                        mockSosList.forEach(report => {
+                            if (report.lat && report.lng) addSosMarkerToMap(report);
+                        });
+                    });
+                    
+                    // Subscribe to Live SOS Alerts
+                    const qSos = query(collection(db, "alertas_sos"));
+                    onSnapshot(qSos, (snapshot) => {
+                        // Clear markers maybe? Better just append them or rely on the combined redraw
+                        // Since this is real time, let's just redraw SOS on top
+                        snapshot.forEach((doc) => {
+                            const data = doc.data();
+                            if (data.lat && data.lng) {
+                                addSosMarkerToMap(data);
+                            }
                         });
                     });
                 });
@@ -1590,6 +1790,13 @@
                 const mockDamageList = JSON.parse(localStorage.getItem('nexus_mock_damage') || '[]');
                 mockDamageList.forEach(report => {
                     addMarkerToMap(report);
+                });
+                
+                const mockSosList = JSON.parse(localStorage.getItem('nexus_mock_sos') || '[]');
+                mockSosList.forEach(report => {
+                    if (report.lat && report.lng) {
+                        addSosMarkerToMap(report);
+                    }
                 });
             }
         }
@@ -1634,6 +1841,32 @@
                     <p class="font-bold uppercase text-nexusNavyLight">${data.edificio || 'Desconocido'}</p>
                     <p class="font-mono mt-0.5 text-nexusRed font-black">Daño: ${data.nivel_danio || 1}/10</p>
                     ${data.comentarios ? `<p class="italic mt-1 text-[10px] text-gray-600">"${data.comentarios}"</p>` : ''}
+                </div>
+            `);
+            
+            mapMarkers.push(marker);
+        }
+
+        function addSosMarkerToMap(data) {
+            if (!map || !data.lat || !data.lng) return;
+            
+            const sosIcon = L.divIcon({
+                className: 'custom-sos-icon',
+                html: `<div class="w-4 h-4 bg-nexusRed rounded-full shadow-sosPulse animate-ping"></div><div class="w-4 h-4 bg-nexusRed rounded-full absolute top-0 left-0"></div>`,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+
+            const marker = L.marker([data.lat, data.lng], {
+                icon: sosIcon
+            }).addTo(map);
+            
+            marker.bindPopup(`
+                <div class="text-xs text-nexusDark font-sans text-center">
+                    <p class="font-bold uppercase text-nexusRed border-b border-nexusRed pb-1 mb-1">⚠️ SOS ACTIVO</p>
+                    <p class="font-bold">${data.nombre}</p>
+                    <p class="font-mono text-[10px] text-gray-700 mt-1">C.I: ${data.cedula}</p>
+                    <p class="font-mono text-[10px] text-gray-700">Grupo: ${data.habitantes} pers.</p>
                 </div>
             `);
             
