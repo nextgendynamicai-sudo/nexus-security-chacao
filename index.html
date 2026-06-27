@@ -498,6 +498,16 @@
                             <p class="text-center py-4 text-xs font-mono text-gray-500">No hay reportes de daño estructural.</p>
                         </div>
                     </div>
+
+                    <!-- DIRECTORIO DE CIUDADANOS -->
+                    <div class="glass-panel p-5 rounded-xl space-y-4 shadow-tactical">
+                        <h3 class="font-tactical font-bold text-nexusBronze tracking-wider flex items-center border-b border-nexusBronze/20 pb-2">
+                            DIRECTORIO DE CIUDADANOS (PADRÓN)
+                        </h3>
+                        <div id="admin-citizens-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                            <p class="text-center py-4 text-xs font-mono text-gray-500">Cargando base de datos poblacional...</p>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- COLUMN 2: RELIEF CENTER MANAGER -->
@@ -1002,17 +1012,20 @@
                     renderAdminAcopioList(defaultAcopioCenters);
                 });
 
-                // Subscribe to Registrations (Metrics)
+                // Subscribe to Registrations (Metrics & Directory)
                 onSnapshot(collection(db, "registros_chacao_v4"), (snapshot) => {
                     let totalReg = 0;
                     let totalHab = 0;
+                    const citizens = [];
                     snapshot.forEach((doc) => {
                         const data = doc.data();
                         totalReg++;
                         totalHab += parseInt(data.habitantes || 0);
+                        citizens.push({ id: doc.id, ...data });
                     });
                     metricRegistros.innerText = totalReg;
                     metricHabitantes.innerText = totalHab;
+                    renderCitizensDirectory(citizens);
                 });
 
                 // Subscribe to SOS Alerts
@@ -1618,6 +1631,16 @@
             renderAdminSos(mockSos);
             renderAdminDamage(mockDamage);
             renderAdminAcopioList(mockAcopio);
+            
+            // Render citizens in mock
+            const citizens = [...mockRegistros];
+            if (currentUser) {
+                // Ensure current user is in the list
+                if (!citizens.find(c => c.cedula === currentUser.cedula)) {
+                    citizens.push(currentUser);
+                }
+            }
+            renderCitizensDirectory(citizens);
         }
 
         // Resolving / Archiving SOS Alert
@@ -1764,24 +1787,75 @@
             const rbacCed = document.getElementById('rbac-cedula').value.trim().toUpperCase();
             const rbacRole = document.getElementById('rbac-role').value;
             if (!rbacCed) return alert("Ingrese cédula");
+            await assignRoleDirect(rbacCed, rbacRole);
+            document.getElementById('rbac-cedula').value = '';
+        });
 
+        // Global function for rendering citizens and granting roles directly
+        window.assignRoleDirect = async function(cedula, role) {
+            if (!isRoot) return alert("Solo el Mando ROOT puede asignar roles.");
             if (!isSimulationMode && db) {
                 try {
                     const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-                    await setDoc(doc(db, "roles_autoridad_v4", rbacCed), {
-                        role: rbacRole,
+                    await setDoc(doc(db, "roles_autoridad_v4", cedula), {
+                        role: role,
                         grantedBy: "ROOT",
                         updatedAt: new Date().toISOString()
                     });
-                    alert(`Rol ${rbacRole} asignado a ${rbacCed}`);
-                    document.getElementById('rbac-cedula').value = '';
+                    alert(`Rol ${role} asignado a ${cedula}`);
                 } catch (err) {
                     alert("Error asignando rol: " + err.message);
                 }
             } else {
                 alert("Debes estar conectado a Firebase real para asignar roles de autoridad.");
             }
-        });
+        };
+
+        function renderCitizensDirectory(citizens) {
+            const container = document.getElementById('admin-citizens-list');
+            if (!container) return;
+            
+            // Sort alphabetically by name
+            citizens.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+            
+            if (citizens.length === 0) {
+                container.innerHTML = `<p class="text-center py-4 text-xs font-mono text-gray-500">Padrón vacío.</p>`;
+                return;
+            }
+            
+            container.innerHTML = citizens.map(c => {
+                // Only ROOT sees the explicit role assignment dropdowns
+                const rootControls = isRoot ? `
+                    <div class="mt-2 pt-2 border-t border-nexusBronze/10 flex items-center justify-between">
+                        <select id="role-sel-${c.cedula}" class="text-[9px] font-mono p-1 rounded bg-nexusNavy border border-nexusBronze/30 text-gray-300 w-32">
+                            <option value="ALCALDE">Alcalde</option>
+                            <option value="POLICIA">Policía</option>
+                            <option value="DIPUTADO">Diputado</option>
+                            <option value="SALUD_CHACAO">Salud Chacao</option>
+                        </select>
+                        <button onclick="assignRoleDirect('${c.cedula}', document.getElementById('role-sel-${c.cedula}').value)" class="text-[9px] font-bold font-mono px-2 py-1 bg-nexusRed/20 text-nexusRed hover:bg-nexusRed hover:text-white rounded transition-colors uppercase border border-nexusRed/30">
+                            Dar Mando
+                        </button>
+                    </div>
+                ` : '';
+
+                return `
+                    <div class="p-3 bg-nexusNavyLight/40 rounded border border-nexusBronze/10 text-xs">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-bold text-gray-200 uppercase">${c.nombre}</h4>
+                                <p class="text-gray-400 font-mono mt-0.5">C.I: <span class="text-white">${c.cedula}</span></p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[9px] font-mono text-nexusBronze bg-nexusBronze/10 px-1.5 py-0.5 rounded border border-nexusBronze/20">${c.edificio}</span>
+                                <p class="text-[10px] text-gray-500 mt-1">Acompañantes: ${c.habitantes}</p>
+                            </div>
+                        </div>
+                        ${rootControls}
+                    </div>
+                `;
+            }).join('');
+        }
 
         // Tab View Transitions
         btnAdminTab.addEventListener('click', () => {
