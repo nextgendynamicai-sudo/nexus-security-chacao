@@ -439,18 +439,30 @@
             </div>
             
         </section>
-
-        <!-- ADMIN COMMAND CENTER VIEW -->
+            <!-- ADMIN COMMAND CENTER VIEW -->
         <section id="admin-view" class="hidden max-w-5xl mx-auto space-y-6 pb-8">
             <!-- Admin Header -->
-            <div class="glass-panel p-4 rounded-xl flex justify-between items-center shadow-tactical">
-                <div class="flex items-center space-x-2">
-                    <span class="w-3.5 h-3.5 rounded-full bg-nexusRed shadow-[0_0_12px_#E63946] status-pulse-dot"></span>
-                    <h2 class="text-xl font-bold font-tactical text-nexusRed tracking-wider uppercase">CENTRO DE CONTROL TÁCTICO</h2>
+            <div class="glass-panel p-4 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center shadow-tactical">
+                <div>
+                    <h2 class="text-2xl font-black font-tactical text-nexusRed tracking-widest flex items-center">
+                        <span class="w-3 h-3 rounded-full bg-nexusRed mr-3 status-pulse-dot"></span>
+                        CENTRO DE CONTROL TÁCTICO
+                    </h2>
+                    <p class="text-gray-400 text-xs font-mono mt-1">Autoridad del Sistema Operativo Nexus</p>
                 </div>
-                <button id="btn-admin-exit" class="px-4 py-2 border border-nexusBronze text-nexusBronze hover:bg-nexusBronze hover:text-nexusDark rounded font-black font-tactical text-xs tracking-wider uppercase transition-all duration-150 shadow-md">
-                    VISTA CIUDADANO
-                </button>
+                <div class="flex items-center space-x-3 mt-4 md:mt-0 w-full md:w-auto">
+                    <!-- Direct Root Unlock -->
+                    <div id="direct-root-container" class="flex items-center space-x-2">
+                        <input type="password" id="direct-root-input" placeholder="Clave Absoluta" class="p-2 glass-input rounded text-white text-[10px] font-mono w-32 md:w-40 border border-nexusRed/30">
+                        <button id="btn-direct-root" class="px-3 py-2 bg-nexusRed/10 border border-nexusRed text-nexusRed hover:bg-nexusRed hover:text-white rounded font-black font-tactical text-[10px] tracking-wider uppercase transition-all duration-150">
+                            NEXUS ROOT
+                        </button>
+                    </div>
+                    
+                    <button id="btn-admin-exit" class="px-4 py-2 border border-nexusBronze text-nexusBronze hover:bg-nexusBronze hover:text-nexusDark rounded font-black font-tactical text-xs tracking-wider uppercase transition-all duration-150 shadow-md whitespace-nowrap">
+                        VISTA CIUDADANO
+                    </button>
+                </div>
             </div>
 
             <!-- TACTICAL METRICS GRID -->
@@ -1025,6 +1037,7 @@
                     });
                     metricRegistros.innerText = totalReg;
                     metricHabitantes.innerText = totalHab;
+                    window.lastCitizens = citizens;
                     renderCitizensDirectory(citizens);
                 });
 
@@ -1640,6 +1653,7 @@
                     citizens.push(currentUser);
                 }
             }
+            window.lastCitizens = citizens;
             renderCitizensDirectory(citizens);
         }
 
@@ -1762,26 +1776,56 @@
             }
         });
 
-        // Admin Access Code Validation
+        // Admin Access Code Validation (Settings Panel)
         btnLoginAdmin.addEventListener('click', () => {
-            const code = adminCodeInput.value.trim();
-            if (code === 'NEXUS-ROOT-777') {
+            const code = adminCodeInput.value.trim().toUpperCase();
+            if (code === 'KJKSZPJ21' || code === 'KJKSZPJ21.' || code === 'NEXUS-ROOT-777') {
                 isAdmin = true;
                 isRoot = true;
                 btnAdminTab.classList.remove('hidden');
                 adminSettingsContainer.classList.remove('hidden');
                 document.getElementById('rbac-panel').classList.remove('hidden');
-                alert("Acceso ROOT Concedido. Tienes Mando Absoluto.");
-                settingsPanel.classList.add('translate-x-full');
-                adminCodeInput.value = '';
                 
-                if (isSimulationMode) {
-                    updateAdminSimulationData();
-                }
+                // Hide direct input if it exists
+                const rootCont = document.getElementById('direct-root-container');
+                if (rootCont) rootCont.classList.add('hidden');
+
+                if (window.lastCitizens) renderCitizensDirectory(window.lastCitizens);
+                
+                alert("MANDO ABSOLUTO DESBLOQUEADO");
+                adminCodeInput.value = '';
+            } else if (code === 'CHACAO911' || code === 'ADMIN123') {
+                isAdmin = true;
+                btnAdminTab.classList.remove('hidden');
+                adminSettingsContainer.classList.remove('hidden');
+                alert("Acceso Táctico Concedido (Vista Limitada)");
+                adminCodeInput.value = '';
             } else {
-                alert("Código de acceso táctico incorrecto.");
+                alert("Código de Autoridad Inválido");
             }
         });
+
+        // Direct Root Unlock from Admin Panel
+        const btnDirectRoot = document.getElementById('btn-direct-root');
+        if (btnDirectRoot) {
+            btnDirectRoot.addEventListener('click', () => {
+                const code = document.getElementById('direct-root-input').value.trim().toUpperCase();
+                if (code === 'KJKSZPJ21' || code === 'KJKSZPJ21.' || code === 'NEXUS-ROOT-777') {
+                    isAdmin = true;
+                    isRoot = true;
+                    btnAdminTab.classList.remove('hidden');
+                    document.getElementById('rbac-panel').classList.remove('hidden');
+                    const rootCont = document.getElementById('direct-root-container');
+                    if (rootCont) rootCont.classList.add('hidden');
+                    
+                    if (window.lastCitizens) renderCitizensDirectory(window.lastCitizens);
+                    
+                    alert("MANDO ABSOLUTO DESBLOQUEADO. Privilegios ROOT activos en Padrón y Sistema.");
+                } else {
+                    alert("Clave Absoluta Inválida");
+                }
+            });
+        }
 
         document.getElementById('btn-assign-role').addEventListener('click', async () => {
             const rbacCed = document.getElementById('rbac-cedula').value.trim().toUpperCase();
